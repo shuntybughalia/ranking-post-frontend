@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { categories, type Category } from "../data/articles";
 
-export default function CategoryFilter() {
-  const [active, setActive] = useState<Category>("All Posts");
+interface CategoryFilterProps {
+  active: Category;
+  onChange: (category: Category) => void;
+}
 
+export default function CategoryFilter({ active, onChange }: CategoryFilterProps) {
   return (
     <section className="border-b border-border bg-slate-50 px-6 py-5">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3">
@@ -13,7 +15,7 @@ export default function CategoryFilter() {
           <button
             key={category}
             type="button"
-            onClick={() => setActive(category)}
+            onClick={() => onChange(category)}
             className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
               active === category
                 ? "bg-navy text-white"

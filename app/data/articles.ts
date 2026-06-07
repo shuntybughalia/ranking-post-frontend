@@ -2,8 +2,10 @@ export type Category = "All Posts" | "SEO" | "Link Building" | "Content Marketin
 
 export interface Article {
   id: string;
+  slug: string;
   title: string;
   excerpt: string;
+  content: string[];
   category: Exclude<Category, "All Posts">;
   readTime: string;
   author: string;
@@ -23,9 +25,17 @@ export const categories: Category[] = [
 export const articles: Article[] = [
   {
     id: "1",
+    slug: "future-of-guest-posting-2024",
     title: "The Future of Guest Posting in 2024: Moving Beyond Backlinks",
     excerpt:
       "Discover why relevance and authority are outpacing volume in the new era of search. We analyze data from over 5,000 successful campaigns to show you what works today.",
+    content: [
+      "Guest posting has evolved far beyond a simple link-building tactic. In 2024, search engines prioritize topical relevance, editorial quality, and genuine audience value over raw backlink volume.",
+      "Our analysis of over 5,000 successful campaigns reveals a clear pattern: placements on niche-relevant publications with engaged readerships outperform high-DR sites with mismatched audiences by 3.2x in organic traffic impact.",
+      "The most effective campaigns now focus on three pillars: editorial alignment with the host site's content strategy, author credibility signals, and content that serves the reader first — with links as a natural byproduct rather than the primary goal.",
+      "Brands that treat guest posting as a relationship-building channel — not a transactional link exchange — are seeing sustained ranking improvements, referral traffic, and brand authority that compounds over time.",
+      "To stay competitive, audit your current guest post portfolio for relevance scores, diversify into emerging niche publications, and invest in original research or data-driven content that editors actively want to publish.",
+    ],
     category: "Case Studies",
     readTime: "8 min read",
     author: "Alex Rivera",
@@ -36,9 +46,17 @@ export const articles: Article[] = [
   },
   {
     id: "2",
+    slug: "mastering-semantic-keywords",
     title: "Mastering the Art of Semantic Keywords",
     excerpt:
       "Learn how to build topical authority with entity-based keyword clusters that align with modern search intent models.",
+    content: [
+      "Semantic SEO is the practice of optimizing for topics and entities rather than isolated keywords. Search engines now understand context, synonyms, and relationships between concepts — making keyword stuffing obsolete.",
+      "Start by mapping your core topic into a pillar page supported by cluster content. Each cluster article should cover a subtopic that search engines associate with your main entity, creating a web of interlinked, authoritative content.",
+      "Use tools like Google's NLP API, AlsoAsked, and entity extraction from competitor content to identify the semantic gaps in your current strategy. Look for related entities your competitors rank for that you haven't covered yet.",
+      "Implement schema markup for articles, FAQs, and author credentials to reinforce entity associations. Structured data helps search engines confidently categorize your content within the broader knowledge graph.",
+      "Measure success through topical visibility — track rankings across your entire cluster, not just head terms. When semantic coverage is comprehensive, you'll see lift across dozens of related queries simultaneously.",
+    ],
     category: "SEO",
     readTime: "5 min",
     author: "Sarah Chen",
@@ -48,9 +66,17 @@ export const articles: Article[] = [
   },
   {
     id: "3",
+    slug: "white-hat-link-building-strategies",
     title: "White-Hat Link Building Strategies That Scale",
     excerpt:
       "Proven outreach frameworks and relationship-building tactics used by top agencies to earn high-authority placements.",
+    content: [
+      "Sustainable link building in 2024 requires a shift from volume-based outreach to value-first relationship building. The agencies seeing consistent results treat every placement as the start of a partnership, not a one-off transaction.",
+      "The broken link reclamation method remains highly effective: identify outdated resources on authoritative sites in your niche, create superior replacement content, and reach out with a genuine helpful pitch. Response rates average 12–18% when the replacement genuinely adds value.",
+      "Digital PR campaigns tied to original data or industry surveys generate the highest-authority links at scale. One well-executed study can earn 50+ editorial mentions from publications that would never respond to a standard guest post pitch.",
+      "Build an outreach CRM to track relationships, follow-ups, and placement history. Top performers nurture contacts over months before making an ask — warming up with social engagement, comments, and value-add introductions.",
+      "Always prioritize relevance over domain rating. A link from a DR 45 site in your exact niche typically moves rankings more than a DR 80 general news site with no topical connection to your content.",
+    ],
     category: "Link Building",
     readTime: "7 min",
     author: "Marcus Webb",
@@ -60,9 +86,17 @@ export const articles: Article[] = [
   },
   {
     id: "4",
+    slug: "content-clusters-topical-dominance",
     title: "Content Clusters: The Blueprint for Topical Dominance",
     excerpt:
       "A step-by-step guide to structuring pillar pages and supporting content that captures entire keyword ecosystems.",
+    content: [
+      "Content clusters are the most reliable framework for building topical authority at scale. A pillar page covers a broad topic comprehensively, while cluster pages dive deep into specific subtopics — all interlinked to signal expertise to search engines.",
+      "Begin with keyword research that maps search intent across your topic. Group keywords by subtopic, identify the highest-volume head term for your pillar, and assign supporting keywords to individual cluster articles.",
+      "Your pillar page should be 3,000–5,000 words of genuinely comprehensive coverage — not thin content padded for length. Include a table of contents linking to each cluster page, and ensure every cluster links back to the pillar.",
+      "Publish cluster content on a consistent schedule rather than all at once. A steady drip of 2–4 cluster articles per month signals ongoing topical investment and gives search engines fresh crawl signals across your topic ecosystem.",
+      "Audit and refresh cluster content quarterly. Update statistics, add new subtopics as the landscape evolves, and consolidate underperforming pages into stronger cluster articles to maintain topical density.",
+    ],
     category: "Content Marketing",
     readTime: "6 min",
     author: "Emily Park",
@@ -71,3 +105,19 @@ export const articles: Article[] = [
       "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&q=80",
   },
 ];
+
+export function getArticleBySlug(slug: string): Article | undefined {
+  return articles.find((article) => article.slug === slug);
+}
+
+export function getAllSlugs(): string[] {
+  return articles.map((article) => article.slug);
+}
+
+export function filterArticles(
+  category: Category,
+  list: Article[] = articles,
+): Article[] {
+  if (category === "All Posts") return list;
+  return list.filter((article) => article.category === category);
+}
