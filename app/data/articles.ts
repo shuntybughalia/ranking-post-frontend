@@ -1,4 +1,38 @@
-export type Category = "All Posts" | "SEO" | "Link Building" | "Content Marketing" | "Case Studies";
+export const articleCategories = [
+  "Digital Marketing",
+  "SEO",
+  "Content Marketing",
+  "Social Media Marketing",
+  "PPC & Advertising",
+  "Business & Entrepreneurship",
+  "Startups",
+  "Small Business",
+  "Leadership",
+  "Productivity",
+  "Technology",
+  "Artificial Intelligence",
+  "Software & Apps",
+  "Cybersecurity",
+  "Web Development",
+  "Finance",
+  "Personal Finance",
+  "Investing",
+  "Cryptocurrency",
+  "Banking & Loans",
+  "Lifestyle",
+  "Health & Fitness",
+  "Travel",
+  "Fashion",
+  "Food & Wellness",
+  "Education & Career",
+  "Online Learning",
+  "Career Development",
+  "Interview Tips",
+  "Remote Work",
+] as const;
+
+export type ArticleCategory = (typeof articleCategories)[number];
+export type Category = "All Posts" | ArticleCategory;
 
 export interface Article {
   id: string;
@@ -6,7 +40,7 @@ export interface Article {
   title: string;
   excerpt: string;
   content: string[];
-  category: Exclude<Category, "All Posts">;
+  category: ArticleCategory;
   readTime: string;
   author: string;
   date: string;
@@ -14,13 +48,7 @@ export interface Article {
   featured?: boolean;
 }
 
-export const categories: Category[] = [
-  "All Posts",
-  "SEO",
-  "Link Building",
-  "Content Marketing",
-  "Case Studies",
-];
+export const categories: Category[] = ["All Posts", ...articleCategories];
 
 export const articles: Article[] = [
   {
@@ -36,7 +64,7 @@ export const articles: Article[] = [
       "Brands that treat guest posting as a relationship-building channel — not a transactional link exchange — are seeing sustained ranking improvements, referral traffic, and brand authority that compounds over time.",
       "To stay competitive, audit your current guest post portfolio for relevance scores, diversify into emerging niche publications, and invest in original research or data-driven content that editors actively want to publish.",
     ],
-    category: "Case Studies",
+    category: "Digital Marketing",
     readTime: "8 min read",
     author: "Alex Rivera",
     date: "Mar 12",
@@ -77,7 +105,7 @@ export const articles: Article[] = [
       "Build an outreach CRM to track relationships, follow-ups, and placement history. Top performers nurture contacts over months before making an ask — warming up with social engagement, comments, and value-add introductions.",
       "Always prioritize relevance over domain rating. A link from a DR 45 site in your exact niche typically moves rankings more than a DR 80 general news site with no topical connection to your content.",
     ],
-    category: "Link Building",
+    category: "Digital Marketing",
     readTime: "7 min",
     author: "Marcus Webb",
     date: "Feb 22",
