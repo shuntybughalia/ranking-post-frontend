@@ -4,21 +4,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "../../components/Header";
 import ArticleCard from "../../components/ArticleCard";
-import { articles, getAllSlugs, getArticleBySlug } from "../../data/articles";
+import { getArticleBySlug, getArticles } from "@/lib/articles";
+
+export const dynamic = "force-dynamic";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
   params,
 }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug);
 
   if (!article) return { title: "Post Not Found" };
 
@@ -30,10 +28,11 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug);
 
   if (!article) notFound();
 
+  const articles = await getArticles();
   const related = articles
     .filter((a) => a.slug !== slug && a.category === article.category)
     .slice(0, 3);

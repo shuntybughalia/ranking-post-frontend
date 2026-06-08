@@ -1,9 +1,48 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import Header from "../components/Header";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const form = new FormData(e.currentTarget);
+    const name = form.get("name") as string;
+    const email = form.get("email") as string;
+    const password = form.get("password") as string;
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed.");
+        return;
+      }
+
+      router.push("/admin");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <Header />
@@ -12,20 +51,25 @@ export default function RegisterPage() {
           <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
             <h1 className="text-2xl font-bold text-navy">Create your account</h1>
             <p className="mt-2 text-sm text-muted">
-              Join RANKINGPOST to access guest posting tools and SEO insights.
+              Register to access the admin panel and publish articles.
             </p>
 
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={(e) => e.preventDefault()}
-            >
+            {error && (
+              <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-navy">
                   Full name
                 </label>
                 <input
                   id="name"
+                  name="name"
                   type="text"
+                  required
                   placeholder="John Doe"
                   className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
@@ -37,7 +81,9 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
+                  required
                   placeholder="you@company.com"
                   className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
@@ -49,7 +95,10 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="password"
+                  name="password"
                   type="password"
+                  required
+                  minLength={6}
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
@@ -57,9 +106,10 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90"
+                disabled={loading}
+                className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                Register
+                {loading ? "Creating account..." : "Register"}
               </button>
             </form>
 

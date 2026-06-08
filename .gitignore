@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local user accounts (created at runtime)
+/data/users.json
+
 # vercel
 .vercel
 

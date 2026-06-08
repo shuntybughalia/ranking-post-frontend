@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import Header from "../components/Header";
+import { getArticles } from "@/lib/articles";
 import BlogListing from "./BlogListing";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Blog — RANKINGPOST",
-  description: "Expert SEO insights, link building strategies, and content marketing guides.",
+  description:
+    "Expert SEO insights, link building strategies, and content marketing guides.",
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const articles = await getArticles();
+
   return (
     <>
       <Header />
@@ -17,7 +23,7 @@ export default function BlogPage() {
           Deep dives into guest posting, search strategy, and digital growth.
         </p>
       </section>
-      <BlogListing />
+      <BlogListing articles={articles} />
     </>
   );
 }

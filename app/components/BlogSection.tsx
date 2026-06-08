@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import {
-  articles,
-  filterArticles,
-  type Category,
-} from "../data/articles";
+import { filterArticles, type Article, type Category } from "../data/articles";
 import CategoryFilter from "./CategoryFilter";
 import FeaturedArticle from "./FeaturedArticle";
 import LatestArticles from "./LatestArticles";
 
-export default function BlogSection() {
+interface BlogSectionProps {
+  articles: Article[];
+}
+
+export default function BlogSection({ articles }: BlogSectionProps) {
   const [activeCategory, setActiveCategory] = useState<Category>("All Posts");
   const filtered = filterArticles(activeCategory, articles);
   const featured = filtered.find((a) => a.featured);

@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import {
-  articles,
-  filterArticles,
-  type Category,
-} from "../data/articles";
+import { filterArticles, type Article, type Category } from "../data/articles";
 import CategoryFilter from "../components/CategoryFilter";
 import ArticleCard from "../components/ArticleCard";
 
-export default function BlogListing() {
+interface BlogListingProps {
+  articles: Article[];
+}
+
+export default function BlogListing({ articles }: BlogListingProps) {
   const [activeCategory, setActiveCategory] = useState<Category>("All Posts");
   const filtered = filterArticles(activeCategory, articles);
 
