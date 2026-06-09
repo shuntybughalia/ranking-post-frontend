@@ -1,4 +1,5 @@
 import "server-only";
+import { parseArticleContent, stripHtml } from "./content";
 import { readJson, writeJson } from "./db";
 import type { Article, ArticleCategory } from "./types";
 
@@ -13,7 +14,8 @@ function slugify(title: string): string {
 }
 
 function estimateReadTime(content: string[]): string {
-  const words = content.join(" ").split(/\s+/).filter(Boolean).length;
+  const text = content.map((c) => stripHtml(c)).join(" ");
+  const words = text.split(/\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.ceil(words / 200));
   return `${minutes} min read`;
 }
@@ -31,6 +33,13 @@ export async function getArticles(): Promise<Article[]> {
   return articles.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
+}
+
+export async function getArticleById(
+  id: string,
+): Promise<Article | undefined> {
+  const articles = await getArticlesRaw();
+  return articles.find((article) => article.id === id);
 }
 
 export async function getArticleBySlug(
@@ -59,14 +68,7 @@ export async function createArticle(
   input: CreateArticleInput,
 ): Promise<Article> {
   const articles = await getArticlesRaw();
-  const paragraphs = input.content
-    .split("\n")
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  if (paragraphs.length === 0) {
-    throw new Error("Article content is required.");
-  }
+  const paragraphs = parseArticleContent(input.content);
 
   let baseSlug = slugify(input.title);
   let slug = baseSlug;
@@ -103,6 +105,71 @@ export async function createArticle(
   await writeJson(ARTICLES_FILE, articles);
 
   return article;
+}
+
+export interface UpdateArticleInput {
+  title?: string;
+  excerpt?: string;
+  content?: string;
+  category?: ArticleCategory;
+  image?: string;
+  featured?: boolean;
+}
+
+export async function updateArticle(
+  id: string,
+  input: UpdateArticleInput,
+): Promise<Article | null> {
+  const articles = await getArticlesRaw();
+  const index = articles.findIndex((article) => article.id === id);
+
+  if (index === -1) return null;
+
+  const existing = articles[index];
+
+  if (input.title !== undefined) {
+    existing.title = input.title.trim();
+    let baseSlug = slugify(existing.title);
+    let slug = baseSlug;
+    let counter = 1;
+    while (articles.some((a, i) => i !== index && a.slug === slug)) {
+      slug = `${baseSlug}-${counter}`;
+      counter += 1;
+    }
+    existing.slug = slug;
+  }
+
+  if (input.excerpt !== undefined) {
+    existing.excerpt = input.excerpt.trim();
+  }
+
+  if (input.content !== undefined) {
+    const paragraphs = parseArticleContent(input.content);
+    existing.content = paragraphs;
+    existing.readTime = estimateReadTime(paragraphs);
+  }
+
+  if (input.category !== undefined) {
+    existing.category = input.category;
+  }
+
+  if (input.image !== undefined) {
+    existing.image = input.image.trim();
+  }
+
+  if (input.featured !== undefined) {
+    existing.featured = input.featured;
+    if (input.featured) {
+      articles.forEach((item, i) => {
+        if (i !== index) item.featured = false;
+      });
+    }
+  }
+
+  articles[index] = existing;
+  await writeJson(ARTICLES_FILE, articles);
+
+  return existing;
 }
 
 export async function deleteArticle(id: string): Promise<boolean> {

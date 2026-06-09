@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Header from "../../components/Header";
 import ArticleCard from "../../components/ArticleCard";
+import ArticleContent from "../../components/ArticleContent";
 import { getArticleBySlug, getArticles } from "@/lib/articles";
 
 export const dynamic = "force-dynamic";
@@ -86,16 +87,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
           </div>
 
-          <div className="prose prose-slate mt-8 max-w-none">
-            {article.content.map((paragraph, index) => (
-              <p
-                key={index}
-                className="mb-5 text-base leading-relaxed text-muted last:mb-0"
-              >
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          <ArticleContent content={article.content} />
         </div>
       </article>
 

@@ -1,6 +1,44 @@
 "use client";
 
+import { FormEvent, useState } from "react";
+
 export default function NewsletterCTA() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage("");
+    setError(false);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(true);
+        setMessage(data.error ?? "Failed to subscribe.");
+        return;
+      }
+
+      setMessage("You're subscribed! Check your inbox for weekly insights.");
+      setEmail("");
+    } catch {
+      setError(true);
+      setMessage("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="relative mt-12 overflow-hidden rounded-2xl bg-navy px-8 py-10 md:px-12 md:py-14">
       <div className="relative z-10 max-w-lg">
@@ -14,20 +52,32 @@ export default function NewsletterCTA() {
 
         <form
           className="mt-6 flex flex-col gap-3 sm:flex-row"
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={handleSubmit}
         >
           <input
             type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your business email"
             className="flex-1 rounded-lg border-0 bg-white px-4 py-3 text-sm text-foreground outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-accent/50"
           />
           <button
             type="submit"
-            className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90"
+            disabled={loading}
+            className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            Subscribe Now
+            {loading ? "Subscribing..." : "Subscribe Now"}
           </button>
         </form>
+
+        {message && (
+          <p
+            className={`mt-4 text-sm ${error ? "text-red-300" : "text-accent"}`}
+          >
+            {message}
+          </p>
+        )}
 
         <p className="mt-4 text-xs italic text-slate-400">
           Join 15,000+ SEO professionals already on the list.

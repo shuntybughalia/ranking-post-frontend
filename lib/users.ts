@@ -51,3 +51,31 @@ export async function verifyUser(
 
   return { id: user.id, name: user.name, email: user.email };
 }
+
+export async function getUserById(id: string): Promise<User | undefined> {
+  const users = await getUsers();
+  return users.find((user) => user.id === id);
+}
+
+export async function updateUserProfile(
+  id: string,
+  updates: { name?: string; password?: string },
+): Promise<SessionUser | null> {
+  const users = await getUsers();
+  const index = users.findIndex((user) => user.id === id);
+
+  if (index === -1) return null;
+
+  if (updates.name !== undefined) {
+    users[index].name = updates.name.trim();
+  }
+
+  if (updates.password !== undefined) {
+    users[index].passwordHash = await bcrypt.hash(updates.password, 10);
+  }
+
+  await writeJson(USERS_FILE, users);
+
+  const user = users[index];
+  return { id: user.id, name: user.name, email: user.email };
+}

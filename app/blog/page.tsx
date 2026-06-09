@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Header from "../components/Header";
 import { getArticles } from "@/lib/articles";
 import BlogListing from "./BlogListing";
@@ -23,7 +24,9 @@ export default async function BlogPage() {
           Deep dives into guest posting, search strategy, and digital growth.
         </p>
       </section>
-      <BlogListing articles={articles} />
+      <Suspense>
+        <BlogListing articles={articles} />
+      </Suspense>
     </>
   );
 }

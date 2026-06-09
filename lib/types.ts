@@ -38,3 +38,33 @@ export interface SessionUser {
   name: string;
   email: string;
 }
+
+export interface MarketPackage {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  da: number;
+  traffic: string;
+  niche: string;
+  turnaround: string;
+}
+
+export type OrderStatus = "pending" | "in_progress" | "completed" | "cancelled";
+
+export interface Order {
+  id: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  price: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  subscribedAt: string;
+}
