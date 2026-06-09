@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import type { UserRole } from "@/lib/types";
+
 interface User {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
 }
 
 export default function HeaderAuth() {
@@ -33,15 +36,20 @@ export default function HeaderAuth() {
     return <div className="h-9 w-24" />;
   }
 
+  const canAdmin =
+    user?.role === "admin" || user?.role === "super_admin";
+
   if (user) {
     return (
       <div className="flex items-center gap-3">
-        <Link
-          href="/admin"
-          className="hidden text-sm font-medium text-muted transition-colors hover:text-navy sm:block"
-        >
-          Admin
-        </Link>
+        {canAdmin && (
+          <Link
+            href="/admin"
+            className="hidden text-sm font-medium text-muted transition-colors hover:text-navy sm:block"
+          >
+            {user.role === "super_admin" ? "Super Admin" : "Admin"}
+          </Link>
+        )}
         <span className="hidden text-sm text-muted sm:block">{user.name}</span>
         <button
           type="button"

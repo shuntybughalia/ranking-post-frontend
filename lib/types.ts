@@ -25,11 +25,14 @@ export interface Article {
   createdAt: string;
 }
 
+export type UserRole = "user" | "admin" | "super_admin";
+
 export interface User {
   id: string;
   name: string;
   email: string;
   passwordHash: string;
+  role?: UserRole;
   createdAt: string;
 }
 
@@ -37,6 +40,15 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
+}
+
+export interface PublicUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
 }
 
 export interface MarketPackage {

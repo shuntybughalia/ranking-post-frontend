@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/admin-auth";
 import { getSubscribers, subscribeEmail } from "@/lib/newsletter";
 
 export async function GET() {
-  const session = await getSession();
+  const session = await requireAdminSession();
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   const subscribers = await getSubscribers();

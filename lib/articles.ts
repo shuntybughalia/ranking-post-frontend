@@ -35,6 +35,13 @@ export async function getArticles(): Promise<Article[]> {
   );
 }
 
+export async function getArticlesByAuthor(author: string): Promise<Article[]> {
+  const articles = await getArticles();
+  return articles.filter(
+    (a) => a.author.toLowerCase() === author.toLowerCase(),
+  );
+}
+
 export async function getArticleById(
   id: string,
 ): Promise<Article | undefined> {

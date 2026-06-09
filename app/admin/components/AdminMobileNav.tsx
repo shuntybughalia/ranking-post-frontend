@@ -7,12 +7,20 @@ const navItems = [
   { label: "Dashboard", href: "/admin", exact: true },
   { label: "Articles", href: "/admin/articles" },
   { label: "Orders", href: "/admin/orders" },
+  { label: "Users", href: "/admin/users", superAdminOnly: true },
   { label: "Newsletter", href: "/admin/newsletter" },
   { label: "Settings", href: "/admin/settings" },
 ];
 
-export default function AdminMobileNav() {
+interface AdminMobileNavProps {
+  isSuperAdmin?: boolean;
+}
+
+export default function AdminMobileNav({
+  isSuperAdmin = false,
+}: AdminMobileNavProps) {
   const pathname = usePathname();
+  const items = navItems.filter((item) => !item.superAdminOnly || isSuperAdmin);
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;
@@ -21,7 +29,7 @@ export default function AdminMobileNav() {
 
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-border bg-white px-4 py-2 lg:hidden">
-      {navItems.map((item) => {
+      {items.map((item) => {
         const active = isActive(item.href, item.exact);
         return (
           <Link

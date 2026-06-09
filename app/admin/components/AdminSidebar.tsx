@@ -3,6 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const usersNavItem = {
+  label: "Users",
+  href: "/admin/users",
+  superAdminOnly: true,
+  icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+};
+
 const navItems = [
   {
     label: "Dashboard",
@@ -40,6 +54,7 @@ const navItems = [
       </svg>
     ),
   },
+  usersNavItem,
   {
     label: "Newsletter",
     href: "/admin/newsletter",
@@ -62,8 +77,15 @@ const navItems = [
   },
 ];
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  isSuperAdmin?: boolean;
+}
+
+export default function AdminSidebar({ isSuperAdmin = false }: AdminSidebarProps) {
   const pathname = usePathname();
+  const items = navItems.filter(
+    (item) => !("superAdminOnly" in item && item.superAdminOnly) || isSuperAdmin,
+  );
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;
@@ -73,8 +95,11 @@ export default function AdminSidebar() {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-white lg:block">
       <nav className="flex flex-col gap-1 p-4">
-        {navItems.map((item) => {
-          const active = isActive(item.href, item.exact);
+        {items.map((item) => {
+          const active = isActive(
+            item.href,
+            "exact" in item ? item.exact : undefined,
+          );
           return (
             <Link
               key={item.href}

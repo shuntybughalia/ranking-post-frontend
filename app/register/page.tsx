@@ -34,7 +34,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/admin");
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");

@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/admin-auth";
 import { createArticle, getArticles } from "@/lib/articles";
 import { articleCategories } from "@/lib/types";
 
@@ -10,10 +10,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
+  const session = await requireAdminSession();
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   try {
