@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { canAccessAdmin } from "@/lib/permissions";
+import { canAccessAdmin, isSuperAdmin } from "@/lib/permissions";
 import { COOKIE_NAME, verifySessionToken } from "@/lib/session";
 
 export async function middleware(request: NextRequest) {
@@ -25,7 +25,18 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!canAccessAdmin(user.role)) {
-    return NextResponse.redirect(new URL("/?error=admin_access_denied", request.url));
+    return NextResponse.redirect(
+      new URL("/?error=admin_access_denied", request.url),
+    );
+  }
+
+  if (
+    request.nextUrl.pathname.startsWith("/admin/users") &&
+    !isSuperAdmin(user.role)
+  ) {
+    return NextResponse.redirect(
+      new URL("/admin?error=super_admin_required", request.url),
+    );
   }
 
   return NextResponse.next();

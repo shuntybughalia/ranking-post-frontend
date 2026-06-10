@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:super-admin": "node scripts/setup-super-admin.mjs"
   },
   "dependencies": {
     "@tiptap/extension-color": "^3.26.0",

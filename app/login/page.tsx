@@ -8,7 +8,8 @@ import Header from "../components/Header";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/admin";
+  const redirectParam = searchParams.get("redirect");
+  const accessDenied = searchParams.get("error") === "admin_access_denied";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,11 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          redirect: redirectParam,
+        }),
       });
 
       const data = await res.json();
@@ -35,7 +40,7 @@ function LoginForm() {
         return;
       }
 
-      router.push(redirect);
+      router.push(data.redirectTo ?? "/");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -49,8 +54,15 @@ function LoginForm() {
       <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-navy">Welcome back</h1>
         <p className="mt-2 text-sm text-muted">
-          Log in to manage and publish articles.
+          Sign in with your account. Admins and super admins are redirected to
+          the admin panel.
         </p>
+
+        {accessDenied && (
+          <p className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Admin access required. Log in with an admin or super admin account.
+          </p>
+        )}
 
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -60,7 +72,10 @@ function LoginForm() {
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-navy">
+            <label
+              htmlFor="email"
+              className="mb-1.5 block text-sm font-medium text-navy"
+            >
               Email
             </label>
             <input
@@ -74,7 +89,10 @@ function LoginForm() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-navy">
+            <label
+              htmlFor="password"
+              className="mb-1.5 block text-sm font-medium text-navy"
+            >
               Password
             </label>
             <input
@@ -95,6 +113,21 @@ function LoginForm() {
             {loading ? "Signing in..." : "Log in"}
           </button>
         </form>
+
+        <div className="mt-6 rounded-lg bg-slate-50 px-4 py-3 text-xs text-muted">
+          <p className="font-medium text-navy">Role-based access</p>
+          <ul className="mt-2 space-y-1">
+            <li>
+              <strong>Super Admin</strong> — all users, blogs, orders, settings
+            </li>
+            <li>
+              <strong>Admin</strong> — articles, orders, newsletter
+            </li>
+            <li>
+              <strong>User</strong> — public site, market &amp; orders only
+            </li>
+          </ul>
+        </div>
 
         <p className="mt-6 text-center text-sm text-muted">
           Don&apos;t have an account?{" "}

@@ -6,7 +6,12 @@ import StatsCard from "./components/StatsCard";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const [stats, session] = await Promise.all([
     getPlatformStats(),
     getSession(),
@@ -15,6 +20,11 @@ export default async function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
+      {error === "super_admin_required" && (
+        <p className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Super admin access required to manage users.
+        </p>
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-navy">Dashboard</h1>
         <p className="mt-1 text-sm text-muted">
