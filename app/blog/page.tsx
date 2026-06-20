@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Blog — RANKINGPOST",
   description:
     "Expert SEO insights, link building strategies, and content marketing guides.",
+  alternates: {
+    canonical: "/blog",
+  },
 };
 
 export default async function BlogPage() {

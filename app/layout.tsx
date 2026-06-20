@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
 import Footer from "./components/Footer";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const GA_MEASUREMENT_ID = "G-6Y60Q7PDSY";
@@ -13,9 +14,13 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: "RANKINGPOST — SEO Insights & Strategies",
   description:
     "Expert analysis, data-driven guest posting guides, and elite digital marketing strategies.",
+  alternates: {
+    canonical: "/",
+  },
   verification: {
     google: "EztC5r_alERBt8UQO6zGpI_JZ7i19Ye_P-StNnI_GN4",
   },
