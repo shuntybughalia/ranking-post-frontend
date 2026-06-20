@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getArticles } from "@/lib/articles";
+import { getAllArticles } from "@/lib/articles";
 import ArticleSearch from "../components/ArticleSearch";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminArticlesPage() {
-  const articles = await getArticles();
+  const articles = await getAllArticles();
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">

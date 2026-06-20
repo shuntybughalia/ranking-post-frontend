@@ -1,5 +1,5 @@
 import "server-only";
-import { getArticles } from "./articles";
+import { getAllArticles } from "./articles";
 import { getSubscribers } from "./newsletter";
 import { getUsers } from "./users";
 import { articleCategories } from "./types";
@@ -15,7 +15,7 @@ export interface PlatformStats {
 
 export async function getPlatformStats(): Promise<PlatformStats> {
   const [articles, users, subscribers] = await Promise.all([
-    getArticles(),
+    getAllArticles(),
     getUsers(),
     getSubscribers(),
   ]);

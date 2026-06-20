@@ -91,6 +91,12 @@ export default async function AdminDashboard({
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
+          href="/admin/moderation"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm font-medium text-amber-900 hover:bg-amber-100"
+        >
+          Moderation Queue
+        </Link>
+        <Link
           href="/admin/new"
           className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy/90"
         >

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HeaderAuth from "./HeaderAuth";
 
 const navLinks = [
@@ -16,6 +16,13 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => setIsLoggedIn(res.ok))
+      .catch(() => setIsLoggedIn(false));
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white">
@@ -69,7 +76,15 @@ export default function Header() {
           })}
         </nav>
 
-        <HeaderAuth />
+        <div className="flex items-center gap-3">
+          <Link
+            href={isLoggedIn ? "/submit" : "/login?redirect=/submit"}
+            className="hidden rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-navy transition-opacity hover:opacity-90 sm:inline-flex"
+          >
+            Submit Post
+          </Link>
+          <HeaderAuth />
+        </div>
       </div>
 
       {mobileOpen && (
@@ -96,6 +111,13 @@ export default function Header() {
                 </Link>
               );
             })}
+            <Link
+              href={isLoggedIn ? "/submit" : "/login?redirect=/submit"}
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-navy"
+            >
+              Submit Post
+            </Link>
           </div>
         </nav>
       )}

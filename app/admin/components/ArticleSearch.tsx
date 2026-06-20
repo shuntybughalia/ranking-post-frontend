@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Article } from "@/lib/types";
 import DeleteArticleButton from "../DeleteArticleButton";
+import ArticleModerationActions from "./ArticleModerationActions";
 
 interface ArticleSearchProps {
   articles: Article[];
@@ -49,6 +50,7 @@ export default function ArticleSearch({ articles }: ArticleSearchProps) {
                 <tr>
                   <th className="px-6 py-4 font-semibold text-navy">Title</th>
                   <th className="px-6 py-4 font-semibold text-navy">Category</th>
+                  <th className="px-6 py-4 font-semibold text-navy">Status</th>
                   <th className="hidden px-6 py-4 font-semibold text-navy md:table-cell">
                     Author
                   </th>
@@ -71,6 +73,11 @@ export default function ArticleSearch({ articles }: ArticleSearchProps) {
                         >
                           {article.title}
                         </Link>
+                        {article.status !== "published" && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-muted">
+                            {article.status}
+                          </span>
+                        )}
                         {article.featured && (
                           <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-navy">
                             Featured
@@ -79,12 +86,17 @@ export default function ArticleSearch({ articles }: ArticleSearchProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted">{article.category}</td>
+                    <td className="px-6 py-4 capitalize text-muted">{article.status}</td>
                     <td className="hidden px-6 py-4 text-muted md:table-cell">
                       {article.author}
                     </td>
                     <td className="px-6 py-4 text-muted">{article.date}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <ArticleModerationActions
+                          id={article.id}
+                          status={article.status}
+                        />
                         <Link
                           href={`/admin/${article.id}/edit`}
                           className="text-sm font-medium text-navy hover:underline"

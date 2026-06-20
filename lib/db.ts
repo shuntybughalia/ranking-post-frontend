@@ -4,6 +4,7 @@ import path from "path";
 import { getDb, isMongoConfigured } from "./mongodb";
 
 const dataDir = path.join(process.cwd(), "data");
+const STORE_KEY = "_storeKey";
 
 type StorageBackend = "mongo" | "file";
 
@@ -15,6 +16,18 @@ function isServerless(): boolean {
 
 function collectionName(filename: string): string {
   return filename.replace(/\.json$/, "");
+}
+
+function dedupeById<T extends { id?: string }>(items: T[]): T[] {
+  const map = new Map<string, T>();
+
+  for (const item of items) {
+    if (item.id) {
+      map.set(item.id, item);
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 async function resolveStorageBackend(): Promise<StorageBackend> {
@@ -62,7 +75,11 @@ async function readJsonFile<T>(filename: string, fallback: T): Promise<T> {
 
   try {
     const raw = await readFile(filePath, "utf-8");
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw) as T;
+    if (Array.isArray(parsed)) {
+      return dedupeById(parsed as Array<{ id?: string }>) as T;
+    }
+    return parsed;
   } catch {
     await writeJsonFile(filename, fallback);
     return fallback;
@@ -72,36 +89,58 @@ async function readJsonFile<T>(filename: string, fallback: T): Promise<T> {
 async function writeJsonFile<T>(filename: string, data: T): Promise<void> {
   await ensureDataDir();
   const filePath = path.join(dataDir, filename);
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  const payload = Array.isArray(data)
+    ? dedupeById(data as Array<{ id?: string }>)
+    : data;
+  await writeFile(filePath, JSON.stringify(payload, null, 2), "utf-8");
 }
 
 async function readJsonMongo<T>(filename: string, fallback: T): Promise<T> {
   const db = await getDb();
   const collection = db.collection(collectionName(filename));
-  const docs = await collection.find({}).toArray();
+  const stored = await collection.findOne({ [STORE_KEY]: filename });
 
-  if (docs.length === 0) {
-    if (Array.isArray(fallback) && fallback.length > 0) {
-      await writeJsonMongo(filename, fallback);
+  if (stored?.data) {
+    const data = stored.data as T;
+    if (Array.isArray(data)) {
+      return dedupeById(data as Array<{ id?: string }>) as T;
     }
-    return fallback;
+    return data;
   }
 
-  return docs.map(({ _id: _unused, ...rest }) => rest) as T;
+  const legacyDocs = await collection
+    .find({ [STORE_KEY]: { $exists: false } })
+    .toArray();
+
+  if (legacyDocs.length > 0) {
+    const items = dedupeById(
+      legacyDocs.map(({ _id: _unused, ...rest }) => rest as { id?: string }),
+    );
+    await writeJsonMongo(filename, items as T);
+    return items as T;
+  }
+
+  if (Array.isArray(fallback) && fallback.length > 0) {
+    await writeJsonMongo(filename, fallback);
+  }
+
+  return fallback;
 }
 
 async function writeJsonMongo<T>(filename: string, data: T): Promise<void> {
-  if (!Array.isArray(data)) {
-    throw new Error("MongoDB storage only supports array data.");
-  }
-
   const db = await getDb();
   const collection = db.collection(collectionName(filename));
+  const payload = Array.isArray(data)
+    ? dedupeById(data as Array<{ id?: string }>)
+    : data;
 
-  await collection.deleteMany({});
-  if (data.length > 0) {
-    await collection.insertMany(data as Record<string, unknown>[]);
-  }
+  await collection.replaceOne(
+    { [STORE_KEY]: filename },
+    { [STORE_KEY]: filename, data: payload },
+    { upsert: true },
+  );
+
+  await collection.deleteMany({ [STORE_KEY]: { $exists: false } });
 }
 
 export async function readJson<T>(filename: string, fallback: T): Promise<T> {

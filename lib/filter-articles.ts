@@ -1,7 +1,7 @@
-import type { Article, Category } from "./types";
+import type { Article, CategoryFilter } from "./types";
 
 export function filterArticles(
-  category: Category,
+  category: CategoryFilter,
   list: Article[],
 ): Article[] {
   if (category === "All Posts") return list;

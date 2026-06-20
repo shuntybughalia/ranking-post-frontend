@@ -2,7 +2,7 @@ export {
   articleCategories,
   articleCategories as categories,
   type ArticleCategory,
-  type Category,
+  type CategoryFilter as Category,
   type Article,
 } from "@/lib/types";
 
