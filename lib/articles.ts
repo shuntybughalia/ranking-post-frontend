@@ -18,6 +18,7 @@ import type {
 } from "./types";
 
 const ARTICLES_FILE = "articles.json";
+const ARTICLES_LISTING_FILE = "articles-listing.json";
 const ARTICLES_MEMORY_CACHE_TTL_MS = PUBLIC_PAGE_REVALIDATE * 1000;
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80";
@@ -101,6 +102,7 @@ function toListItem(article: Article): ArticleListItem {
     date: article.date,
     image,
     featured: article.featured,
+    updatedAt: article.updatedAt,
   };
 }
 
@@ -177,8 +179,26 @@ export async function getArticles(): Promise<Article[]> {
 }
 
 export async function getArticlesForListing(): Promise<ArticleListItem[]> {
+  const cached = await readJson<ArticleListItem[]>(ARTICLES_LISTING_FILE, []);
+  if (cached.length > 0) {
+    return cached;
+  }
+
   const articles = await getArticles();
-  return articles.map(toListItem);
+  const listing = articles.map(toListItem);
+
+  if (listing.length > 0) {
+    await writeJson(ARTICLES_LISTING_FILE, listing);
+  }
+
+  return listing;
+}
+
+async function syncArticlesListingCache(articles: Article[]): Promise<void> {
+  const listing = sortByNewest(
+    articles.filter((article) => article.status === "published"),
+  ).map(toListItem);
+  await writeJson(ARTICLES_LISTING_FILE, listing);
 }
 
 export async function getAllArticles(): Promise<Article[]> {
@@ -378,6 +398,7 @@ export async function createArticle(input: CreatePostInput): Promise<Article> {
 
   articles.push(article);
   await writeJson(ARTICLES_FILE, articles);
+  await syncArticlesListingCache(articles);
   return article;
 }
 
@@ -472,6 +493,7 @@ export async function updateArticle(
   existing.updatedAt = new Date().toISOString();
   articles[index] = existing;
   await writeJson(ARTICLES_FILE, articles);
+  await syncArticlesListingCache(articles);
   return existing;
 }
 
@@ -483,6 +505,7 @@ export async function deleteArticle(id: string): Promise<boolean> {
   if (filtered.length === articles.length) return false;
 
   await writeJson(ARTICLES_FILE, filtered);
+  await syncArticlesListingCache(filtered);
   return true;
 }
 

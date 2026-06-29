@@ -43,6 +43,7 @@ export async function getDb(): Promise<Db> {
       maxIdleTimeMS: 60000,
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
+      socketTimeoutMS: 15000,
       ...(allowInvalidCerts ? { tlsAllowInvalidCertificates: true } : {}),
     });
 
