@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache";
+import { clearArticlesCache } from "./articles";
 import type { Article } from "./types";
 
 export function revalidatePostPaths(article?: Pick<Article, "slug"> | null) {
+  clearArticlesCache();
   revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath("/my-posts");

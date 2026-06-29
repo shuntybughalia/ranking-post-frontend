@@ -4,12 +4,14 @@ interface FeaturedImageProps {
   src: string;
   alt: string;
   priority?: boolean;
+  sizes?: string;
 }
 
 export default function FeaturedImage({
   src,
   alt,
   priority = false,
+  sizes = "(max-width: 768px) 100vw, 896px",
 }: FeaturedImageProps) {
   if (src.startsWith("data:")) {
     return (
@@ -25,7 +27,7 @@ export default function FeaturedImage({
       fill
       className="object-cover"
       priority={priority}
-      sizes="100vw"
+      sizes={sizes}
     />
   );
 }

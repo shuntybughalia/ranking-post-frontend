@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import { getPlatformStats } from "@/lib/stats";
 import { articleCategories } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Stats — RANKINGPOST",

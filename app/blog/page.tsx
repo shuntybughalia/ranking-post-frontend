@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Header from "../components/Header";
-import { getArticles } from "@/lib/articles";
 import BlogListing from "./BlogListing";
+import BlogListingSkeleton from "./BlogListingSkeleton";
+import { getArticlesForListing } from "@/lib/articles";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Blog — RANKINGPOST",
@@ -15,9 +16,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function BlogPage() {
-  const articles = await getArticles();
+async function BlogListingSection() {
+  const articles = await getArticlesForListing();
+  return <BlogListing articles={articles} />;
+}
 
+export default function BlogPage() {
   return (
     <>
       <Header />
@@ -27,8 +31,8 @@ export default async function BlogPage() {
           Deep dives into guest posting, search strategy, and digital growth.
         </p>
       </section>
-      <Suspense>
-        <BlogListing articles={articles} />
+      <Suspense fallback={<BlogListingSkeleton />}>
+        <BlogListingSection />
       </Suspense>
     </>
   );

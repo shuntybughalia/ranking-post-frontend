@@ -1,5 +1,7 @@
 import "server-only";
+import { cache } from "react";
 import { categoryNameToEnum, getCategoryById } from "./categories";
+import { PUBLIC_PAGE_REVALIDATE } from "./cache-config";
 import { parseArticleContent, stripHtml } from "./content";
 import { readJson, writeJson } from "./db";
 import { isValidSlug, slugify } from "./post-validation";
@@ -15,6 +17,7 @@ import type {
 } from "./types";
 
 const ARTICLES_FILE = "articles.json";
+const ARTICLES_MEMORY_CACHE_TTL_MS = PUBLIC_PAGE_REVALIDATE * 1000;
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80";
 
@@ -73,7 +76,25 @@ export function normalizeArticle(raw: LegacyArticle): Article {
   };
 }
 
-async function getArticlesRaw(): Promise<Article[]> {
+let articlesMemoryCache: { articles: Article[]; expiresAt: number } | null = null;
+
+function invalidateArticlesMemoryCache() {
+  articlesMemoryCache = null;
+}
+
+export function clearArticlesCache() {
+  invalidateArticlesMemoryCache();
+}
+
+function omitArticleContent(article: Article): Article {
+  return { ...article, content: [] };
+}
+
+async function fetchArticlesRaw(): Promise<Article[]> {
+  if (articlesMemoryCache && articlesMemoryCache.expiresAt > Date.now()) {
+    return articlesMemoryCache.articles;
+  }
+
   const articles = await readJson<LegacyArticle[]>(ARTICLES_FILE, []);
   const normalized = articles.map(normalizeArticle);
   const deduped = dedupeArticles(normalized);
@@ -82,8 +103,15 @@ async function getArticlesRaw(): Promise<Article[]> {
     await writeJson(ARTICLES_FILE, deduped);
   }
 
+  articlesMemoryCache = {
+    articles: deduped,
+    expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
+  };
+
   return deduped;
 }
+
+const getArticlesRaw = cache(fetchArticlesRaw);
 
 function dedupeArticles(articles: Article[]): Article[] {
   const byId = new Map<string, Article>();
@@ -132,6 +160,11 @@ function sortByNewest(articles: Article[]): Article[] {
 export async function getArticles(): Promise<Article[]> {
   const articles = await getArticlesRaw();
   return sortByNewest(articles.filter((a) => a.status === "published"));
+}
+
+export async function getArticlesForListing(): Promise<Article[]> {
+  const articles = await getArticles();
+  return articles.map(omitArticleContent);
 }
 
 export async function getAllArticles(): Promise<Article[]> {
@@ -197,7 +230,7 @@ export async function getAdjacentArticles(slug: string): Promise<{
   previous: Article | null;
   next: Article | null;
 }> {
-  const articles = await getArticles();
+  const articles = await getArticlesForListing();
   const index = articles.findIndex((article) => article.slug === slug);
 
   if (index === -1) {
@@ -211,7 +244,8 @@ export async function getAdjacentArticles(slug: string): Promise<{
 }
 
 export async function incrementArticleViews(id: string): Promise<void> {
-  const articles = await getArticlesRaw();
+  invalidateArticlesMemoryCache();
+  const articles = await fetchArticlesRaw();
   const index = articles.findIndex((article) => article.id === id);
 
   if (index === -1) return;
@@ -288,7 +322,8 @@ function resolvePublishDate(
 }
 
 export async function createArticle(input: CreatePostInput): Promise<Article> {
-  const articles = await getArticlesRaw();
+  invalidateArticlesMemoryCache();
+  const articles = await fetchArticlesRaw();
   const sanitizedContent = sanitizeHtml(input.content.trim());
   const paragraphs = parseArticleContent(sanitizedContent);
   const slug = await resolveUniqueSlug(input.slug, input.title, articles);
@@ -336,7 +371,8 @@ export async function updateArticle(
   id: string,
   input: UpdatePostInput,
 ): Promise<Article | null> {
-  const articles = await getArticlesRaw();
+  invalidateArticlesMemoryCache();
+  const articles = await fetchArticlesRaw();
   const index = articles.findIndex((article) => article.id === id);
 
   if (index === -1) return null;
@@ -426,7 +462,8 @@ export async function updateArticle(
 }
 
 export async function deleteArticle(id: string): Promise<boolean> {
-  const articles = await getArticlesRaw();
+  invalidateArticlesMemoryCache();
+  const articles = await fetchArticlesRaw();
   const filtered = articles.filter((article) => article.id !== id);
 
   if (filtered.length === articles.length) return false;
