@@ -10,6 +10,7 @@ import { syncTags } from "./tags";
 import type {
   Article,
   ArticleCategory,
+  ArticleListItem,
   CreatePostInput,
   PostStats,
   PostStatus,
@@ -86,8 +87,21 @@ export function clearArticlesCache() {
   invalidateArticlesMemoryCache();
 }
 
-function omitArticleContent(article: Article): Article {
-  return { ...article, content: [] };
+function toListItem(article: Article): ArticleListItem {
+  const image = article.image.startsWith("data:") ? DEFAULT_IMAGE : article.image;
+
+  return {
+    id: article.id,
+    slug: article.slug,
+    title: article.title,
+    excerpt: article.excerpt.slice(0, 280),
+    category: article.category,
+    readTime: article.readTime,
+    author: article.author,
+    date: article.date,
+    image,
+    featured: article.featured,
+  };
 }
 
 async function fetchArticlesRaw(): Promise<Article[]> {
@@ -162,9 +176,9 @@ export async function getArticles(): Promise<Article[]> {
   return sortByNewest(articles.filter((a) => a.status === "published"));
 }
 
-export async function getArticlesForListing(): Promise<Article[]> {
+export async function getArticlesForListing(): Promise<ArticleListItem[]> {
   const articles = await getArticles();
-  return articles.map(omitArticleContent);
+  return articles.map(toListItem);
 }
 
 export async function getAllArticles(): Promise<Article[]> {
@@ -227,8 +241,8 @@ export async function isSlugTaken(
 }
 
 export async function getAdjacentArticles(slug: string): Promise<{
-  previous: Article | null;
-  next: Article | null;
+  previous: ArticleListItem | null;
+  next: ArticleListItem | null;
 }> {
   const articles = await getArticlesForListing();
   const index = articles.findIndex((article) => article.slug === slug);

@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import BlogListing from "./BlogListing";
 import BlogListingSkeleton from "./BlogListingSkeleton";
 import { getArticlesForListing } from "@/lib/articles";
+import { parseCategoryFilter } from "@/lib/filter-articles";
 
 export const revalidate = 60;
 
@@ -16,12 +17,30 @@ export const metadata: Metadata = {
   },
 };
 
-async function BlogListingSection() {
-  const articles = await getArticlesForListing();
-  return <BlogListing articles={articles} />;
+interface BlogListingSectionProps {
+  category?: string;
+  q?: string;
 }
 
-export default function BlogPage() {
+async function BlogListingSection({ category, q }: BlogListingSectionProps) {
+  const articles = await getArticlesForListing();
+
+  return (
+    <BlogListing
+      articles={articles}
+      activeCategory={parseCategoryFilter(category)}
+      searchQuery={q ?? ""}
+    />
+  );
+}
+
+interface BlogPageProps {
+  searchParams: Promise<{ category?: string; q?: string }>;
+}
+
+export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const { category, q } = await searchParams;
+
   return (
     <>
       <Header />
@@ -32,7 +51,7 @@ export default function BlogPage() {
         </p>
       </section>
       <Suspense fallback={<BlogListingSkeleton />}>
-        <BlogListingSection />
+        <BlogListingSection category={category} q={q} />
       </Suspense>
     </>
   );

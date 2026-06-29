@@ -4,6 +4,11 @@ export {
   type ArticleCategory,
   type CategoryFilter as Category,
   type Article,
+  type ArticleListItem,
 } from "@/lib/types";
 
-export { filterArticles } from "@/lib/filter-articles";
+export {
+  filterArticles,
+  filterArticlesByQuery,
+  parseCategoryFilter,
+} from "@/lib/filter-articles";

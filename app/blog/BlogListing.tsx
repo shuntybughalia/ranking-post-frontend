@@ -1,41 +1,41 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { filterArticles, type Article, type Category } from "../data/articles";
-import CategoryFilter from "../components/CategoryFilter";
+import { Suspense } from "react";
+import {
+  filterArticles,
+  filterArticlesByQuery,
+  type ArticleListItem,
+  type Category,
+} from "../data/articles";
 import ArticleCard from "../components/ArticleCard";
+import BlogSearch from "../components/BlogSearch";
+import CategoryFilter from "../components/CategoryFilter";
 
 interface BlogListingProps {
-  articles: Article[];
+  articles: ArticleListItem[];
+  activeCategory: Category;
+  searchQuery: string;
 }
 
-export default function BlogListing({ articles }: BlogListingProps) {
-  const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") ?? "";
-  const [activeCategory, setActiveCategory] = useState<Category>("All Posts");
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-
-  const filtered = useMemo(() => {
-    let result = filterArticles(activeCategory, articles);
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (a) =>
-          a.title.toLowerCase().includes(q) ||
-          a.excerpt.toLowerCase().includes(q) ||
-          a.category.toLowerCase().includes(q) ||
-          a.author.toLowerCase().includes(q),
-      );
-    }
-
-    return result;
-  }, [activeCategory, articles, searchQuery]);
+export default function BlogListing({
+  articles,
+  activeCategory,
+  searchQuery,
+}: BlogListingProps) {
+  const filtered = filterArticlesByQuery(
+    filterArticles(activeCategory, articles),
+    searchQuery,
+  );
 
   return (
     <>
-      <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
+      <Suspense
+        fallback={
+          <section className="border-b border-border bg-slate-50 px-6 py-5">
+            <div className="mx-auto h-9 max-w-6xl animate-pulse rounded-full bg-slate-200" />
+          </section>
+        }
+      >
+        <CategoryFilter active={activeCategory} />
+      </Suspense>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
         <div className="mb-8">
@@ -45,15 +45,9 @@ export default function BlogListing({ articles }: BlogListingProps) {
           </p>
         </div>
 
-        <div className="mb-6">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search articles..."
-            className="w-full max-w-md rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-          />
-        </div>
+        <Suspense fallback={<div className="mb-6 h-11 w-full max-w-md animate-pulse rounded-lg bg-slate-200" />}>
+          <BlogSearch defaultQuery={searchQuery} />
+        </Suspense>
 
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-muted">

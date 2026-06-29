@@ -37,6 +37,19 @@ export interface Article {
   views: number;
 }
 
+export interface ArticleListItem {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: ArticleCategory;
+  readTime: string;
+  author: string;
+  date: string;
+  image: string;
+  featured?: boolean;
+}
+
 export interface BlogCategory {
   id: string;
   name: string;
