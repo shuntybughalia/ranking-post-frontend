@@ -16,16 +16,13 @@ interface User {
 export default function HeaderAuth() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    fetch("/api/auth/me", { signal: controller.signal })
+    fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : { user: null }))
       .then((data) => setUser(data.user))
-      .catch(() => {});
-
-    return () => controller.abort();
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleLogout() {
@@ -33,6 +30,10 @@ export default function HeaderAuth() {
     setUser(null);
     router.push("/");
     router.refresh();
+  }
+
+  if (loading) {
+    return <div className="h-9 w-24" />;
   }
 
   const canAdmin =

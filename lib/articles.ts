@@ -4,13 +4,17 @@ import { categoryNameToEnum, getCategoryById } from "./categories";
 import { PUBLIC_PAGE_REVALIDATE } from "./cache-config";
 import { parseArticleContent, stripHtml } from "./content";
 import { readJson, writeJson } from "./db";
+import {
+  DEFAULT_IMAGE,
+  compactArticleImage,
+  persistArticleImage,
+} from "./image-storage";
 import { isValidSlug, slugify } from "./post-validation";
 import { sanitizeHtml } from "./sanitize";
 import { syncTags } from "./tags";
 import type {
   Article,
   ArticleCategory,
-  ArticleListItem,
   CreatePostInput,
   PostStats,
   PostStatus,
@@ -18,10 +22,7 @@ import type {
 } from "./types";
 
 const ARTICLES_FILE = "articles.json";
-const ARTICLES_LISTING_FILE = "articles-listing.json";
 const ARTICLES_MEMORY_CACHE_TTL_MS = PUBLIC_PAGE_REVALIDATE * 1000;
-const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80";
 
 type LegacyArticle = Partial<Article> & {
   id: string;
@@ -36,6 +37,21 @@ type LegacyArticle = Partial<Article> & {
   image: string;
   createdAt: string;
 };
+
+let articlesMemoryCache: { articles: Article[]; expiresAt: number } | null =
+  null;
+let listingMemoryCache: { articles: Article[]; expiresAt: number } | null =
+  null;
+let articlesInflight: Promise<Article[]> | null = null;
+
+function invalidateArticlesMemoryCache() {
+  articlesMemoryCache = null;
+  listingMemoryCache = null;
+}
+
+export function clearArticlesCache() {
+  invalidateArticlesMemoryCache();
+}
 
 function estimateReadTime(content: string[]): string {
   const text = content.map((c) => stripHtml(c)).join(" ");
@@ -64,7 +80,7 @@ export function normalizeArticle(raw: LegacyArticle): Article {
     author: raw.author,
     authorId: raw.authorId ?? "",
     date: raw.date,
-    image: raw.image,
+    image: compactArticleImage(raw.image),
     featured: raw.featured ?? false,
     tags: raw.tags ?? [],
     metaTitle: raw.metaTitle ?? raw.title,
@@ -78,53 +94,39 @@ export function normalizeArticle(raw: LegacyArticle): Article {
   };
 }
 
-let articlesMemoryCache: { articles: Article[]; expiresAt: number } | null = null;
-
-function invalidateArticlesMemoryCache() {
-  articlesMemoryCache = null;
-}
-
-export function clearArticlesCache() {
-  invalidateArticlesMemoryCache();
-}
-
-function toListItem(article: Article): ArticleListItem {
-  const image = article.image.startsWith("data:") ? DEFAULT_IMAGE : article.image;
-
-  return {
-    id: article.id,
-    slug: article.slug,
-    title: article.title,
-    excerpt: article.excerpt.slice(0, 280),
-    category: article.category,
-    readTime: article.readTime,
-    author: article.author,
-    date: article.date,
-    image,
-    featured: article.featured,
-    updatedAt: article.updatedAt,
-  };
-}
-
 async function fetchArticlesRaw(): Promise<Article[]> {
   if (articlesMemoryCache && articlesMemoryCache.expiresAt > Date.now()) {
     return articlesMemoryCache.articles;
   }
 
-  const articles = await readJson<LegacyArticle[]>(ARTICLES_FILE, []);
-  const normalized = articles.map(normalizeArticle);
-  const deduped = dedupeArticles(normalized);
-
-  if (deduped.length !== normalized.length) {
-    await writeJson(ARTICLES_FILE, deduped);
+  if (articlesInflight) {
+    return articlesInflight;
   }
 
-  articlesMemoryCache = {
-    articles: deduped,
-    expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
-  };
+  articlesInflight = (async () => {
+    const articles = await readJson<LegacyArticle[]>(ARTICLES_FILE, []);
+    const normalized = articles.map(normalizeArticle);
+    const deduped = dedupeArticles(normalized);
+    const imagesCompacted = articles.some(
+      (article) => article.image !== compactArticleImage(article.image),
+    );
 
-  return deduped;
+    // Rewrite once after compacting base64 images so Mongo stays small/fast.
+    if (deduped.length !== normalized.length || imagesCompacted) {
+      await writeJson(ARTICLES_FILE, deduped);
+    }
+
+    articlesMemoryCache = {
+      articles: deduped,
+      expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
+    };
+
+    return deduped;
+  })().finally(() => {
+    articlesInflight = null;
+  });
+
+  return articlesInflight;
 }
 
 const getArticlesRaw = cache(fetchArticlesRaw);
@@ -178,27 +180,33 @@ export async function getArticles(): Promise<Article[]> {
   return sortByNewest(articles.filter((a) => a.status === "published"));
 }
 
-export async function getArticlesForListing(): Promise<ArticleListItem[]> {
-  const cached = await readJson<ArticleListItem[]>(ARTICLES_LISTING_FILE, []);
-  if (cached.length > 0) {
-    return cached;
-  }
-
-  const articles = await getArticles();
-  const listing = articles.map(toListItem);
-
-  if (listing.length > 0) {
-    await writeJson(ARTICLES_LISTING_FILE, listing);
-  }
-
-  return listing;
+function omitArticleContent(article: Article): Article {
+  return { ...article, content: [] };
 }
 
-async function syncArticlesListingCache(articles: Article[]): Promise<void> {
-  const listing = sortByNewest(
-    articles.filter((article) => article.status === "published"),
-  ).map(toListItem);
-  await writeJson(ARTICLES_LISTING_FILE, listing);
+function listingImage(image: string): string {
+  return compactArticleImage(image);
+}
+
+function toListingArticle(article: Article): Article {
+  return {
+    ...omitArticleContent(article),
+    image: listingImage(article.image),
+  };
+}
+
+/** Published articles without body content — for list/feed payloads. */
+export async function getArticlesForListing(): Promise<Article[]> {
+  if (listingMemoryCache && listingMemoryCache.expiresAt > Date.now()) {
+    return listingMemoryCache.articles;
+  }
+
+  const articles = (await getArticles()).map(toListingArticle);
+  listingMemoryCache = {
+    articles,
+    expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
+  };
+  return articles;
 }
 
 export async function getAllArticles(): Promise<Article[]> {
@@ -261,10 +269,10 @@ export async function isSlugTaken(
 }
 
 export async function getAdjacentArticles(slug: string): Promise<{
-  previous: ArticleListItem | null;
-  next: ArticleListItem | null;
+  previous: Article | null;
+  next: Article | null;
 }> {
-  const articles = await getArticlesForListing();
+  const articles = await getArticles();
   const index = articles.findIndex((article) => article.slug === slug);
 
   if (index === -1) {
@@ -287,6 +295,7 @@ export async function incrementArticleViews(id: string): Promise<void> {
   articles[index].views += 1;
   articles[index].updatedAt = new Date().toISOString();
   await writeJson(ARTICLES_FILE, articles);
+  invalidateArticlesMemoryCache();
 }
 
 export async function getPostStats(authorId?: string): Promise<PostStats> {
@@ -378,7 +387,7 @@ export async function createArticle(input: CreatePostInput): Promise<Article> {
     author: input.author.trim(),
     authorId: input.authorId,
     date: publishedAt ? formatDate(new Date(publishedAt)) : formatDate(now),
-    image: input.image.trim() || DEFAULT_IMAGE,
+    image: await persistArticleImage(input.image.trim() || DEFAULT_IMAGE),
     featured: input.featured ?? false,
     tags,
     metaTitle: input.metaTitle?.trim() || input.title.trim(),
@@ -398,7 +407,7 @@ export async function createArticle(input: CreatePostInput): Promise<Article> {
 
   articles.push(article);
   await writeJson(ARTICLES_FILE, articles);
-  await syncArticlesListingCache(articles);
+  invalidateArticlesMemoryCache();
   return article;
 }
 
@@ -445,7 +454,9 @@ export async function updateArticle(
   }
 
   if (input.image !== undefined) {
-    existing.image = input.image.trim() || DEFAULT_IMAGE;
+    existing.image = await persistArticleImage(
+      input.image.trim() || DEFAULT_IMAGE,
+    );
   }
 
   if (input.tags !== undefined) {
@@ -493,7 +504,7 @@ export async function updateArticle(
   existing.updatedAt = new Date().toISOString();
   articles[index] = existing;
   await writeJson(ARTICLES_FILE, articles);
-  await syncArticlesListingCache(articles);
+  invalidateArticlesMemoryCache();
   return existing;
 }
 
@@ -505,7 +516,7 @@ export async function deleteArticle(id: string): Promise<boolean> {
   if (filtered.length === articles.length) return false;
 
   await writeJson(ARTICLES_FILE, filtered);
-  await syncArticlesListingCache(filtered);
+  invalidateArticlesMemoryCache();
   return true;
 }
 

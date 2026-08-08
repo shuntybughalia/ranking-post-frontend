@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getArticlesForListing } from "@/lib/articles";
+import { getArticles } from "@/lib/articles";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -83,19 +83,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  let blogPosts: MetadataRoute.Sitemap = [];
-
-  try {
-    const articles = await getArticlesForListing();
-    blogPosts = articles.map((article) => ({
-      url: `${base}/blog/${article.slug}`,
-      lastModified: article.updatedAt,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    }));
-  } catch (error) {
-    console.warn("Sitemap skipped blog posts:", error);
-  }
+  const articles = await getArticles();
+  const blogPosts: MetadataRoute.Sitemap = articles.map((article) => ({
+    url: `${base}/blog/${article.slug}`,
+    lastModified: article.updatedAt,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
 
   return [...staticPages, ...blogPosts];
 }

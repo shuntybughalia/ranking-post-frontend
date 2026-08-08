@@ -114,20 +114,7 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-slate-50 px-4 py-3 text-xs text-muted">
-          <p className="font-medium text-navy">Role-based access</p>
-          <ul className="mt-2 space-y-1">
-            <li>
-              <strong>Super Admin</strong> — all users, blogs, orders, settings
-            </li>
-            <li>
-              <strong>Admin</strong> — articles, orders, newsletter
-            </li>
-            <li>
-              <strong>User</strong> — public site, market &amp; orders only
-            </li>
-          </ul>
-        </div>
+       
 
         <p className="mt-6 text-center text-sm text-muted">
           Don&apos;t have an account?{" "}

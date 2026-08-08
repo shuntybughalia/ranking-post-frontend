@@ -9,6 +9,8 @@ const STORE_KEY = "_storeKey";
 type StorageBackend = "mongo" | "file";
 
 let storageBackend: StorageBackend | null = null;
+let mongoRetryAfter = 0;
+const MONGO_RETRY_COOLDOWN_MS = 60_000;
 
 function isServerless(): boolean {
   return Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
@@ -50,16 +52,24 @@ async function resolveStorageBackend(): Promise<StorageBackend> {
     return storageBackend;
   }
 
+  // After a failed Mongo attempt, serve local files for a cooldown so listing
+  // requests don't block on repeated 10s connection timeouts.
+  if (Date.now() < mongoRetryAfter) {
+    return "file";
+  }
+
   try {
     const db = await getDb();
     await db.command({ ping: 1 });
     storageBackend = "mongo";
+    mongoRetryAfter = 0;
   } catch (error) {
     console.warn(
       "MongoDB unavailable locally, falling back to data/*.json files:",
       error instanceof Error ? error.message : error,
     );
-    storageBackend = "file";
+    mongoRetryAfter = Date.now() + MONGO_RETRY_COOLDOWN_MS;
+    return "file";
   }
 
   return storageBackend;
@@ -137,10 +147,13 @@ async function writeJsonMongo<T>(filename: string, data: T): Promise<void> {
   await collection.replaceOne(
     { [STORE_KEY]: filename },
     { [STORE_KEY]: filename, data: payload },
-    { upsert: true },
+    { upsert: true, maxTimeMS: 15_000 },
   );
 
-  await collection.deleteMany({ [STORE_KEY]: { $exists: false } });
+  await collection.deleteMany(
+    { [STORE_KEY]: { $exists: false } },
+    { maxTimeMS: 15_000 },
+  );
 }
 
 export async function readJson<T>(filename: string, fallback: T): Promise<T> {

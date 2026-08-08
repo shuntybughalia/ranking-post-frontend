@@ -4,18 +4,18 @@ import { notFound } from "next/navigation";
 import Header from "../../components/Header";
 import ArticleCard from "../../components/ArticleCard";
 import ArticleContent from "../../components/ArticleContent";
-import ArticleViewTracker from "../../components/ArticleViewTracker";
 import BlogPostJsonLd from "../../components/BlogPostJsonLd";
 import FeaturedImage from "../../components/FeaturedImage";
 import SocialShare from "../../components/SocialShare";
 import {
   getAdjacentArticles,
   getArticleBySlug,
-  getArticlesForListing,
+  getArticles,
+  incrementArticleViews,
 } from "@/lib/articles";
 import { getPostUrl } from "@/lib/site-url";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -66,8 +66,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   if (!article) notFound();
 
+  await incrementArticleViews(article.id);
+
   const [articles, adjacent] = await Promise.all([
-    getArticlesForListing(),
+    getArticles(),
     getAdjacentArticles(slug),
   ]);
 
@@ -79,7 +81,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
-      <ArticleViewTracker articleId={article.id} />
       <BlogPostJsonLd article={article} />
       <Header />
 

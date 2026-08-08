@@ -36,6 +36,9 @@ yarn-error.log*
 # local user accounts (created at runtime)
 /data/users.json
 
+# local featured-image uploads
+/public/uploads
+
 # vercel
 .vercel
 

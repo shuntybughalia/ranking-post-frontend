@@ -33,6 +33,23 @@ export function sanitizeHtml(html: string): string {
       pre: ["class"],
       p: ["style", "class"],
     },
-    allowedSchemes: ["http", "https", "mailto", "data"],
+    // Disallow data: URLs in body HTML — base64 images inflate Mongo writes
+    // and make /api/posts hang for minutes on slow networks.
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      img: (tagName, attribs) => {
+        const src = attribs.src ?? "";
+        if (src.startsWith("data:") || src.length > 2048) {
+          return {
+            tagName,
+            attribs: {
+              ...attribs,
+              src: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80",
+            },
+          };
+        }
+        return { tagName, attribs };
+      },
+    },
   });
 }
