@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import bcrypt from "bcryptjs";
 import { normalizeRole } from "./permissions";
 import { readJson, writeJson } from "./db";
@@ -29,10 +30,10 @@ function normalizeUser(user: User): User {
   return { ...user, role: normalizeRole(user.role) };
 }
 
-export async function getUsers(): Promise<User[]> {
+export const getUsers = cache(async (): Promise<User[]> => {
   const users = await readJson<User[]>(USERS_FILE, []);
   return users.map(normalizeUser);
-}
+});
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
   const users = await getUsers();

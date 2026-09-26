@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 import type { SessionUser } from "./types";
 import { COOKIE_NAME, signSessionToken, verifySessionToken } from "./session";
-import { ensureSuperAdmin, getUserById, toSessionUser } from "./users";
 
 export async function createSession(user: SessionUser): Promise<void> {
   const token = await signSessionToken(user);
@@ -16,21 +16,13 @@ export async function createSession(user: SessionUser): Promise<void> {
   });
 }
 
-export async function getSession(): Promise<SessionUser | null> {
+export const getSession = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
 
-  const payload = await verifySessionToken(token);
-  if (!payload) return null;
-
-  await ensureSuperAdmin();
-
-  const user = await getUserById(payload.id);
-  if (!user) return null;
-
-  return toSessionUser(user);
-}
+  return verifySessionToken(token);
+});
 
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
