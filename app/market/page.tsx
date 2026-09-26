@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import { getMarketPackages } from "@/lib/market";
 import MarketGrid from "./MarketGrid";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Market — RANKINGPOST",

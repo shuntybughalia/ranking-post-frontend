@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { Article } from "../data/articles";
+import type { ArticleListItem } from "../data/articles";
 import ArticleCard from "./ArticleCard";
 
 interface LatestArticlesProps {
-  articles: Article[];
+  articles: ArticleListItem[];
   showViewAll?: boolean;
 }
 

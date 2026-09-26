@@ -1,8 +1,9 @@
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { deleteArticle, getArticleById, updateArticle } from "@/lib/articles";
-import { articleCategories } from "@/lib/types";
+import { getCategories } from "@/lib/categories";
+import { validateImage } from "@/lib/post-validation";
+import { revalidatePostPaths } from "@/lib/revalidate-posts";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -35,17 +36,34 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const body = await request.json();
-    const { title, excerpt, content, category, image, featured } = body;
+    const { title, excerpt, content, category, categoryId, image, featured } =
+      body;
 
-    if (category && !articleCategories.includes(category)) {
-      return NextResponse.json({ error: "Invalid category." }, { status: 400 });
+    let resolvedCategoryId = categoryId;
+    if (!resolvedCategoryId && category) {
+      const categories = await getCategories();
+      resolvedCategoryId = categories.find((item) => item.name === category)?.id;
+    }
+
+    if (resolvedCategoryId) {
+      const categories = await getCategories();
+      if (!categories.some((item) => item.id === resolvedCategoryId)) {
+        return NextResponse.json({ error: "Invalid category." }, { status: 400 });
+      }
+    }
+
+    if (image !== undefined) {
+      const imageError = validateImage(image ?? "");
+      if (imageError) {
+        return NextResponse.json({ error: imageError }, { status: 400 });
+      }
     }
 
     const article = await updateArticle(id, {
       title,
       excerpt,
       content,
-      category,
+      categoryId: resolvedCategoryId,
       image,
       featured: featured !== undefined ? Boolean(featured) : undefined,
     });
@@ -54,11 +72,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Article not found." }, { status: 404 });
     }
 
-    revalidatePath("/");
-    revalidatePath("/blog");
-    revalidatePath(`/blog/${article.slug}`);
-    revalidatePath("/admin");
-    revalidatePath("/admin/articles");
+    revalidatePostPaths(article);
 
     return NextResponse.json({ article });
   } catch (error) {
@@ -83,13 +97,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Article not found." }, { status: 404 });
   }
 
-  revalidatePath("/");
-  revalidatePath("/blog");
-  if (existing) {
-    revalidatePath(`/blog/${existing.slug}`);
-  }
-  revalidatePath("/admin");
-  revalidatePath("/admin/articles");
+  revalidatePostPaths(existing);
 
   return NextResponse.json({ success: true });
 }

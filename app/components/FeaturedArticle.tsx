@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Article } from "../data/articles";
+import type { ArticleListItem } from "../data/articles";
 
 function ClockIcon() {
   return (
@@ -11,7 +11,7 @@ function ClockIcon() {
   );
 }
 
-export default function FeaturedArticle({ article }: { article: Article }) {
+export default function FeaturedArticle({ article }: { article: ArticleListItem }) {
   return (
     <Link href={`/blog/${article.slug}`} className="group block">
       <article className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition-shadow group-hover:shadow-md">

@@ -1,4 +1,5 @@
 import { isHtmlContent } from "@/lib/content";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface ArticleContentProps {
   content: string[];
@@ -9,7 +10,7 @@ export default function ArticleContent({ content }: ArticleContentProps) {
     return (
       <div
         className="article-prose mt-8 max-w-none"
-        dangerouslySetInnerHTML={{ __html: content[0] }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content[0]) }}
       />
     );
   }
