@@ -2,6 +2,25 @@ import type { MetadataRoute } from "next";
 import { getArticles } from "@/lib/articles";
 import { getSiteUrl } from "@/lib/site-url";
 
+/** Generated at request time so the build does not require MongoDB. */
+export const dynamic = "force-dynamic";
+
+async function getPublishedArticlesForSitemap() {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return [];
+  }
+
+  try {
+    return await getArticles();
+  } catch (error) {
+    console.warn(
+      "Sitemap: skipping blog posts (articles unavailable):",
+      error instanceof Error ? error.message : error,
+    );
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
 
@@ -83,7 +102,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const articles = await getArticles();
+  const articles = await getPublishedArticlesForSitemap();
   const blogPosts: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${base}/blog/${article.slug}`,
     lastModified: article.updatedAt,
