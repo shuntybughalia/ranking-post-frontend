@@ -16,6 +16,11 @@ function isServerless(): boolean {
   return Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 }
 
+/** Next.js sets this while running `next build` (including on Vercel). */
+function isProductionBuild(): boolean {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
 function collectionName(filename: string): string {
   return filename.replace(/\.json$/, "");
 }
@@ -34,6 +39,13 @@ function dedupeById<T extends { id?: string }>(items: T[]): T[] {
 
 async function resolveStorageBackend(): Promise<StorageBackend> {
   if (storageBackend) {
+    return storageBackend;
+  }
+
+  // Vercel build prerenders pages (e.g. /stats) but cannot reliably reach MongoDB.
+  // Use committed data/*.json fallbacks during build only; runtime still uses Mongo.
+  if (isProductionBuild()) {
+    storageBackend = "file";
     return storageBackend;
   }
 
