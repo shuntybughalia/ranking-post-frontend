@@ -1,18 +1,23 @@
-import { Suspense } from "react";
-import Header from "./components/Header";
-import Hero from "./components/Hero";
-import HomeBlogFeed from "./components/HomeBlogFeed";
-import BlogSectionSkeleton from "./components/BlogSectionSkeleton";
-import NewsletterCTA from "./components/NewsletterCTA";
+import Hero from "@/app/components/home/Hero";
+import HomeArticles from "@/app/components/home/HomeArticles";
+import NewsletterCTA from "@/app/components/home/NewsletterCTA";
+import { parseCategoryFilter } from "@/app/data/articles";
+import { getArticleListItems } from "@/lib/articles";
+import { firstParam, type SearchParams } from "@/lib/search-params";
 
-export default function Home() {
+// Rendered per request from the in-memory article cache so it always matches the database.
+export const dynamic = "force-dynamic";
+
+export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const [articles, params] = await Promise.all([getArticleListItems(), searchParams]);
+
   return (
     <>
-      <Header />
       <Hero />
-      <Suspense fallback={<BlogSectionSkeleton />}>
-        <HomeBlogFeed />
-      </Suspense>
+      <HomeArticles
+        articles={articles}
+        activeCategory={parseCategoryFilter(firstParam(params.category))}
+      />
       <div className="mx-auto w-full max-w-6xl px-6 pb-10">
         <NewsletterCTA />
       </div>

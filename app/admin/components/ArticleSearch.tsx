@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Article } from "@/lib/types";
-import DeleteArticleButton from "../DeleteArticleButton";
+import DeleteArticleButton from "@/app/admin/components/DeleteArticleButton";
 import ArticleModerationActions from "./ArticleModerationActions";
 
 interface ArticleSearchProps {

@@ -68,7 +68,7 @@ export default function RichTextEditor({
         allowBase64: true,
         HTMLAttributes: { class: "editor-image" },
       }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-accent underline" } }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-gold-dark underline" } }),
       Highlight.configure({ multicolor: false }),
       TextStyle,
       Color,
@@ -237,12 +237,12 @@ export default function RichTextEditor({
           <span className="text-sm font-bold text-navy">A</span>
           <span
             className="absolute bottom-1 left-1.5 right-1.5 h-0.5 rounded"
-            style={{ background: editor.getAttributes("textStyle").color ?? "#0a2540" }}
+            style={{ background: editor.getAttributes("textStyle").color ?? "#172228" }}
           />
           <input
             type="color"
             className="absolute inset-0 cursor-pointer opacity-0"
-            value={editor.getAttributes("textStyle").color ?? "#0a2540"}
+            value={editor.getAttributes("textStyle").color ?? "#172228"}
             onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
           />
         </label>

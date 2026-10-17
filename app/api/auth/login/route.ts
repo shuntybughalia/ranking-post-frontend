@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
 import { getPostLoginRedirect } from "@/lib/permissions";
 import { verifyUser } from "@/lib/users";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const body = await request.json();
     const { email, password, redirect } = body;
@@ -34,3 +35,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Login failed." }, { status: 500 });
   }
 }
+
+export const POST = withApiErrors(handlePOST);

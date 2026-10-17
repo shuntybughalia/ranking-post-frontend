@@ -175,6 +175,36 @@ export async function readJson<T>(filename: string, fallback: T): Promise<T> {
     : readJsonFile(filename, fallback);
 }
 
+/**
+ * Increments a numeric field on one item of an array store without rewriting
+ * the whole collection (a single atomic `$inc` on MongoDB).
+ */
+export async function incrementItemField(
+  filename: string,
+  id: string,
+  field: string,
+): Promise<void> {
+  const backend = await resolveStorageBackend();
+
+  if (backend === "mongo") {
+    const db = await getDb();
+    await db
+      .collection(collectionName(filename))
+      .updateOne(
+        { [STORE_KEY]: filename, "data.id": id },
+        { $inc: { [`data.$.${field}`]: 1 } },
+        { maxTimeMS: 15_000 },
+      );
+    return;
+  }
+
+  const items = await readJsonFile<Array<Record<string, unknown>>>(filename, []);
+  const item = items.find((entry) => entry.id === id);
+  if (!item) return;
+  item[field] = (Number(item[field]) || 0) + 1;
+  await writeJsonFile(filename, items);
+}
+
 export async function writeJson<T>(filename: string, data: T): Promise<void> {
   const backend = await resolveStorageBackend();
   return backend === "mongo"

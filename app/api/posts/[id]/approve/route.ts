@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { approveArticle, getArticleById } from "@/lib/articles";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
+import { withApiErrors } from "@/lib/api-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(_request: Request, context: RouteContext) {
+async function handlePOST(_request: Request, context: RouteContext) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -31,3 +32,5 @@ export async function POST(_request: Request, context: RouteContext) {
 
   return NextResponse.json({ article });
 }
+
+export const POST = withApiErrors(handlePOST);

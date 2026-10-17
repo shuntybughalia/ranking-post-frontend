@@ -3,7 +3,7 @@ import { cache } from "react";
 import { categoryNameToEnum, getCategoryById } from "./categories";
 import { PUBLIC_PAGE_REVALIDATE } from "./cache-config";
 import { parseArticleContent, stripHtml } from "./content";
-import { readJson, writeJson } from "./db";
+import { incrementItemField, readJson, writeJson } from "./db";
 import {
   DEFAULT_IMAGE,
   compactArticleImage,
@@ -15,6 +15,7 @@ import { syncTags } from "./tags";
 import type {
   Article,
   ArticleCategory,
+  ArticleListItem,
   CreatePostInput,
   PostStats,
   PostStatus,
@@ -49,10 +50,6 @@ function invalidateArticlesMemoryCache() {
   listingMemoryCache = null;
 }
 
-export function clearArticlesCache() {
-  invalidateArticlesMemoryCache();
-}
-
 function estimateReadTime(content: string[]): string {
   const text = content.map((c) => stripHtml(c)).join(" ");
   const words = text.split(/\s+/).filter(Boolean).length;
@@ -64,7 +61,19 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export function normalizeArticle(raw: LegacyArticle): Article {
+/** Posts whose upload was lost fall back to their first content image instead of the placeholder. */
+function resolveFeaturedImage(raw: LegacyArticle): string {
+  const image = compactArticleImage(raw.image);
+  if (image !== DEFAULT_IMAGE) return image;
+
+  const match = raw.content.join(" ").match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
+  const candidate = match?.[1].replace(/&amp;/g, "&");
+  return candidate && candidate.length <= 2048 && !candidate.startsWith(DEFAULT_IMAGE.split("?")[0])
+    ? candidate
+    : image;
+}
+
+function normalizeArticle(raw: LegacyArticle): Article {
   const createdAt = raw.createdAt;
   const categoryId = raw.categoryId ?? slugify(raw.category);
 
@@ -80,7 +89,7 @@ export function normalizeArticle(raw: LegacyArticle): Article {
     author: raw.author,
     authorId: raw.authorId ?? "",
     date: raw.date,
-    image: compactArticleImage(raw.image),
+    image: resolveFeaturedImage(raw),
     featured: raw.featured ?? false,
     tags: raw.tags ?? [],
     metaTitle: raw.metaTitle ?? raw.title,
@@ -209,6 +218,27 @@ export async function getArticlesForListing(): Promise<Article[]> {
   return articles;
 }
 
+/** Minimal card data for listing pages, keeping page payloads small. */
+export async function getArticleListItems(): Promise<ArticleListItem[]> {
+  const articles = await getArticlesForListing();
+  return articles.map(
+    ({ id, slug, title, excerpt, category, readTime, author, date, image, featured, publishedAt, updatedAt }) => ({
+      id,
+      slug,
+      title,
+      excerpt,
+      category,
+      readTime,
+      author,
+      date,
+      image,
+      featured,
+      publishedAt,
+      updatedAt,
+    }),
+  );
+}
+
 export async function getAllArticles(): Promise<Article[]> {
   return sortByNewest(await getArticlesRaw());
 }
@@ -246,28 +276,6 @@ export async function getArticleBySlug(
   return article;
 }
 
-export async function getArticleBySlugAdmin(
-  slug: string,
-): Promise<Article | undefined> {
-  const articles = await getArticlesRaw();
-  return articles.find((item) => item.slug === slug);
-}
-
-export async function getAllSlugs(): Promise<string[]> {
-  const articles = await getArticles();
-  return articles.map((article) => article.slug);
-}
-
-export async function isSlugTaken(
-  slug: string,
-  excludeId?: string,
-): Promise<boolean> {
-  const articles = await getArticlesRaw();
-  return articles.some(
-    (article) => article.slug === slug && article.id !== excludeId,
-  );
-}
-
 export async function getAdjacentArticles(slug: string): Promise<{
   previous: Article | null;
   next: Article | null;
@@ -286,16 +294,11 @@ export async function getAdjacentArticles(slug: string): Promise<{
 }
 
 export async function incrementArticleViews(id: string): Promise<void> {
-  invalidateArticlesMemoryCache();
-  const articles = await fetchArticlesRaw();
-  const index = articles.findIndex((article) => article.id === id);
+  await incrementItemField(ARTICLES_FILE, id, "views");
 
-  if (index === -1) return;
-
-  articles[index].views += 1;
-  articles[index].updatedAt = new Date().toISOString();
-  await writeJson(ARTICLES_FILE, articles);
-  invalidateArticlesMemoryCache();
+  // Keep the warm cache in sync instead of forcing a full reload from storage.
+  const cached = articlesMemoryCache?.articles.find((article) => article.id === id);
+  if (cached) cached.views += 1;
 }
 
 export async function getPostStats(authorId?: string): Promise<PostStats> {
@@ -319,7 +322,7 @@ async function resolveUniqueSlug(
   articles: Article[],
   excludeId?: string,
 ): Promise<string> {
-  let baseSlug = requestedSlug?.trim() || slugify(title);
+  const baseSlug = requestedSlug?.trim() || slugify(title);
 
   if (!baseSlug) {
     throw new Error("Slug is required.");

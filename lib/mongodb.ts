@@ -87,7 +87,7 @@ async function resolveMongoUri(uri: string): Promise<string> {
   return `mongodb://${auth}${hosts}${dbPath}${query ? `?${query}` : ""}`;
 }
 
-export function getMongoUri(): string | undefined {
+function getMongoUri(): string | undefined {
   return (
     process.env.MONGODB_URI?.trim() ||
     process.env.MONGO_URI?.trim() ||
@@ -95,7 +95,7 @@ export function getMongoUri(): string | undefined {
   );
 }
 
-export function getDbName(): string {
+function getDbName(): string {
   return process.env.MONGODB_DB_NAME?.trim() || "rankingpost";
 }
 

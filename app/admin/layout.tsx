@@ -47,7 +47,7 @@ export default async function AdminLayout({
               </span>
               <Link
                 href="/admin/new"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-navy hover:opacity-90"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
               >
                 New Article
               </Link>

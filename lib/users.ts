@@ -17,7 +17,7 @@ export function toPublicUser(user: User): PublicUser {
   };
 }
 
-export function toSessionUser(user: User): SessionUser {
+function toSessionUser(user: User): SessionUser {
   return {
     id: user.id,
     name: user.name,
@@ -35,7 +35,7 @@ export const getUsers = cache(async (): Promise<User[]> => {
   return users.map(normalizeUser);
 });
 
-export async function getUserByEmail(email: string): Promise<User | undefined> {
+async function getUserByEmail(email: string): Promise<User | undefined> {
   const users = await getUsers();
   return users.find((user) => user.email.toLowerCase() === email.toLowerCase());
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { getSubscribers, subscribeEmail } from "@/lib/newsletter";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -13,7 +14,7 @@ export async function GET() {
   return NextResponse.json({ subscribers });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const body = await request.json();
     const { email } = body;
@@ -42,3 +43,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = withApiErrors(handleGET);
+export const POST = withApiErrors(handlePOST);

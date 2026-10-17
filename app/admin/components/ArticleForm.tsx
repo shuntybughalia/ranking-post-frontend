@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { apiFetch, getErrorMessage } from "@/lib/api-client";
 import { contentToEditorHtml, stripHtml } from "@/lib/content";
+import { showToast } from "@/lib/toast";
 import { articleCategories } from "@/lib/types";
 import type { Article } from "@/lib/types";
 import RichTextEditor from "./RichTextEditor";
@@ -47,23 +49,11 @@ export default function ArticleForm({ mode, article }: ArticleFormProps) {
         mode === "create" ? "/api/articles" : `/api/articles/${article!.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? `Failed to ${mode} article.`);
-        return;
-      }
-
+      await apiFetch(url, { method, json: payload });
+      showToast(mode === "create" ? "Article created." : "Article updated.", "success");
       router.push("/admin/articles");
-      router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -161,7 +151,7 @@ export default function ArticleForm({ mode, article }: ArticleFormProps) {
             type="checkbox"
             name="featured"
             defaultChecked={article?.featured}
-            className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            className="h-4 w-4 rounded border-border text-gold-dark focus:ring-accent"
           />
           Feature this article on the homepage
         </label>
@@ -170,7 +160,7 @@ export default function ArticleForm({ mode, article }: ArticleFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-navy hover:opacity-90 disabled:opacity-60"
+            className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-60"
           >
             {loading
               ? mode === "create"

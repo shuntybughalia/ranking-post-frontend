@@ -48,6 +48,7 @@ export interface ArticleListItem {
   date: string;
   image: string;
   featured?: boolean;
+  publishedAt?: string | null;
   updatedAt: string;
 }
 

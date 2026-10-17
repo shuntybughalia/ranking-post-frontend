@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import Header from "../components/Header";
+import { apiFetch, getErrorMessage } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,23 +22,14 @@ export default function RegisterPage() {
     const password = form.get("password") as string;
 
     try {
-      const res = await fetch("/api/auth/register", {
+      await apiFetch("/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        json: { name, email, password },
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Registration failed.");
-        return;
-      }
-
+      showToast("Welcome! Your account has been created.", "success");
       router.push("/");
-      router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -45,7 +37,6 @@ export default function RegisterPage() {
 
   return (
     <>
-      <Header />
       <main className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
@@ -107,7 +98,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {loading ? "Creating account..." : "Register"}
               </button>

@@ -9,6 +9,7 @@ import {
   updateUserRole,
 } from "@/lib/users";
 import type { UserRole } from "@/lib/types";
+import { withApiErrors } from "@/lib/api-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -16,7 +17,7 @@ interface RouteContext {
 
 const validRoles: UserRole[] = ["user", "admin", "super_admin"];
 
-export async function GET(_request: Request, context: RouteContext) {
+async function handleGET(_request: Request, context: RouteContext) {
   const session = await requireSuperAdminSession();
 
   if (!session) {
@@ -49,7 +50,7 @@ export async function GET(_request: Request, context: RouteContext) {
   });
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function handlePATCH(request: Request, context: RouteContext) {
   const session = await requireSuperAdminSession();
 
   if (!session) {
@@ -79,7 +80,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+async function handleDELETE(_request: Request, context: RouteContext) {
   const session = await requireSuperAdminSession();
 
   if (!session) {
@@ -100,3 +101,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const GET = withApiErrors(handleGET);
+export const PATCH = withApiErrors(handlePATCH);
+export const DELETE = withApiErrors(handleDELETE);

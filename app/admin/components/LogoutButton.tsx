@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-client";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -10,9 +11,10 @@ export default function LogoutButton() {
   async function handleLogout() {
     setLoading(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
-      router.refresh();
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setLoading(false);
     }

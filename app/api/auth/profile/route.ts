@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSession, getSession } from "@/lib/auth";
 import { updateUserProfile } from "@/lib/users";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const session = await getSession();
 
   if (!session) {
@@ -57,3 +58,5 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export const PATCH = withApiErrors(handlePATCH);

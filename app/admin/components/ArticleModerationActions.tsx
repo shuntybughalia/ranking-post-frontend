@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 import type { PostStatus } from "@/lib/types";
 
 interface ArticleModerationActionsProps {
@@ -27,13 +29,11 @@ export default function ArticleModerationActions({
 
     setApproving(true);
     try {
-      const res = await fetch(`/api/posts/${id}/approve`, { method: "POST" });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "Failed to approve post.");
-      }
+      await apiFetch(`/api/posts/${id}/approve`, { method: "POST" });
+      showToast("Post approved and published.", "success");
+      router.refresh();
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setApproving(false);
     }
@@ -46,17 +46,11 @@ export default function ArticleModerationActions({
 
     setRejecting(true);
     try {
-      const res = await fetch(`/api/posts/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error ?? "Failed to reject post.");
-      }
+      await apiFetch(`/api/posts/${id}/reject`, { method: "POST", json: { reason } });
+      showToast("Post rejected.", "success");
+      router.refresh();
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setRejecting(false);
     }

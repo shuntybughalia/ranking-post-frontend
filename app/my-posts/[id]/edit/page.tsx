@@ -1,7 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import Header from "@/app/components/Header";
-import PostForm from "@/app/components/PostForm";
-import { ToastProvider } from "@/app/components/Toast";
+import PostForm from "@/app/components/posts/PostForm";
 import { getArticleById } from "@/lib/articles";
 import { getSession } from "@/lib/auth";
 import { canEditPost } from "@/lib/post-auth";
@@ -27,8 +25,7 @@ export default async function EditMyPostPage({ params }: EditPostPageProps) {
   }
 
   return (
-    <ToastProvider>
-      <Header />
+    <>
       <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-navy">Edit Post</h1>
@@ -40,9 +37,8 @@ export default async function EditMyPostPage({ params }: EditPostPageProps) {
           mode="edit"
           article={article}
           authorName={session.name}
-          userRole={session.role}
         />
       </div>
-    </ToastProvider>
+    </>
   );
 }

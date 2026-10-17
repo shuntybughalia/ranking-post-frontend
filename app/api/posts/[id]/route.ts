@@ -17,12 +17,13 @@ import {
 } from "@/lib/post-validation";
 import { canAccessAdmin } from "@/lib/permissions";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
+import { withApiErrors } from "@/lib/api-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+async function handleGET(_request: Request, context: RouteContext) {
   const session = await requireSession();
   const { id } = await context.params;
   const article = await getArticleById(id);
@@ -42,7 +43,7 @@ export async function GET(_request: Request, context: RouteContext) {
   return NextResponse.json({ article });
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function handlePATCH(request: Request, context: RouteContext) {
   const session = await requireSession();
 
   if (!session) {
@@ -78,13 +79,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    let status = body.status
+    const status = body.status
       ? validatePostStatus(body.status) ?? existing.status
       : existing.status;
-
-    if (!isAdmin && status === "published" && existing.status !== "published") {
-      status = "pending";
-    }
 
     const article = await updateArticle(id, {
       title: body.title,
@@ -115,7 +112,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+async function handleDELETE(_request: Request, context: RouteContext) {
   const session = await requireSession();
 
   if (!session) {
@@ -143,3 +140,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   return NextResponse.json({ success: true });
 }
+
+export const GET = withApiErrors(handleGET);
+export const PATCH = withApiErrors(handlePATCH);
+export const DELETE = withApiErrors(handleDELETE);

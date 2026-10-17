@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getArticlesByAuthorId } from "@/lib/articles";
 import { requireSession } from "@/lib/post-auth";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const session = await requireSession();
 
   if (!session) {
@@ -12,3 +13,5 @@ export async function GET() {
   const articles = await getArticlesByAuthorId(session.id);
   return NextResponse.json({ articles });
 }
+
+export const GET = withApiErrors(handleGET);

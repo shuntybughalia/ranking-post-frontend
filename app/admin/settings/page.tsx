@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { apiFetch, getErrorMessage } from "@/lib/api-client";
 
 interface User {
   id: string;
@@ -15,9 +16,9 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : { user: null }))
-      .then((data) => setUser(data.user));
+    apiFetch<{ user: User | null }>("/api/auth/me")
+      .then((data) => setUser(data.user))
+      .catch(() => setUser(null));
   }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -29,30 +30,22 @@ export default function AdminSettingsPage() {
     const form = new FormData(e.currentTarget);
 
     try {
-      const res = await fetch("/api/auth/profile", {
+      const data = await apiFetch<{ user: User }>("/api/auth/profile", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        json: {
           name: form.get("name"),
           currentPassword: form.get("currentPassword") || undefined,
           newPassword: form.get("newPassword") || undefined,
-        }),
+        },
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Failed to update profile.");
-        return;
-      }
 
       setUser(data.user);
       setSuccess("Profile updated successfully.");
       (e.target as HTMLFormElement).reset();
       const nameInput = document.getElementById("name") as HTMLInputElement;
       if (nameInput) nameInput.value = data.user.name;
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -152,7 +145,7 @@ export default function AdminSettingsPage() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-navy hover:opacity-90 disabled:opacity-60"
+          className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-60"
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>

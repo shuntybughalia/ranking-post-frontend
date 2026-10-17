@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ApiError, apiFetch, getErrorMessage } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 import type { MarketPackage } from "@/lib/types";
 
 interface MarketGridProps {
@@ -20,28 +22,21 @@ export default function MarketGrid({ packages }: MarketGridProps) {
     setLoadingId(pkg.id);
 
     try {
-      const res = await fetch("/api/orders", {
+      await apiFetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId: pkg.id }),
+        json: { packageId: pkg.id },
+        toastOnError: false,
       });
-
-      const data = await res.json();
-
-      if (res.status === 401) {
-        router.push(`/login?redirect=/market`);
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error ?? "Failed to place order.");
-        return;
-      }
-
       setSuccess(`Order placed for ${pkg.name}! View it in your orders.`);
+      showToast(`Order placed for ${pkg.name}.`, "success");
       router.push("/orders");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login?redirect=/market");
+        return;
+      }
+      setError(getErrorMessage(error));
+      showToast(getErrorMessage(error), "error");
     } finally {
       setLoadingId(null);
     }
@@ -95,7 +90,7 @@ export default function MarketGrid({ packages }: MarketGridProps) {
               type="button"
               onClick={() => handleOrder(pkg)}
               disabled={loadingId === pkg.id}
-              className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-navy transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
             >
               {loadingId === pkg.id ? "Placing order..." : "Order Now"}
             </button>

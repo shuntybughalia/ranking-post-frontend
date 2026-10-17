@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import Header from "@/app/components/Header";
-import PostForm from "@/app/components/PostForm";
-import { ToastProvider } from "@/app/components/Toast";
+import PostForm from "@/app/components/posts/PostForm";
 import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +12,7 @@ export default async function SubmitPostPage() {
   }
 
   return (
-    <ToastProvider>
-      <Header />
+    <>
       <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-navy">Submit Post</h1>
@@ -26,9 +23,8 @@ export default async function SubmitPostPage() {
         <PostForm
           mode="create"
           authorName={session.name}
-          userRole={session.role}
         />
       </div>
-    </ToastProvider>
+    </>
   );
 }

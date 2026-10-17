@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createOrder, getOrders, getOrdersByUser } from "@/lib/orders";
+import { createOrder, getOrdersByUser } from "@/lib/orders";
 import { getMarketPackages } from "@/lib/market";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const session = await getSession();
 
   if (!session) {
@@ -14,7 +15,7 @@ export async function GET() {
   return NextResponse.json({ orders });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await getSession();
 
   if (!session) {
@@ -57,3 +58,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const GET = withApiErrors(handleGET);
+export const POST = withApiErrors(handlePOST);

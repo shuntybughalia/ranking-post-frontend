@@ -1,96 +1,90 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 import type { BlogCategory, BlogTag } from "@/lib/types";
-import { useToast } from "@/app/components/Toast";
+
+async function fetchTaxonomy() {
+  const [categoriesData, tagsData] = await Promise.all([
+    apiFetch<{ categories?: BlogCategory[] }>("/api/categories"),
+    apiFetch<{ tags?: BlogTag[] }>("/api/tags"),
+  ]);
+  return { categories: categoriesData.categories ?? [], tags: tagsData.tags ?? [] };
+}
 
 export default function CategoriesManager() {
-  const { showToast } = useToast();
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [tags, setTags] = useState<BlogTag[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [tagName, setTagName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function applyTaxonomy(data: { categories: BlogCategory[]; tags: BlogTag[] }) {
+    setCategories(data.categories);
+    setTags(data.tags);
+  }
+
   async function loadData() {
-    const [categoriesRes, tagsRes] = await Promise.all([
-      fetch("/api/categories"),
-      fetch("/api/tags"),
-    ]);
-    const categoriesData = await categoriesRes.json();
-    const tagsData = await tagsRes.json();
-    setCategories(categoriesData.categories ?? []);
-    setTags(tagsData.tags ?? []);
+    try {
+      applyTaxonomy(await fetchTaxonomy());
+    } catch {
+      // apiFetch already showed the error toast.
+    }
   }
 
   useEffect(() => {
-    void loadData();
+    fetchTaxonomy()
+      .then(applyTaxonomy)
+      .catch(() => {
+        // apiFetch already showed the error toast.
+      });
   }, []);
 
-  async function handleCreateCategory(e: FormEvent) {
-    e.preventDefault();
+  async function mutate(request: () => Promise<unknown>, successMessage: string) {
     setLoading(true);
     try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: categoryName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error ?? "Failed to create category.", "error");
-        return;
-      }
-      setCategoryName("");
-      showToast("Category created.", "success");
+      await request();
+      showToast(successMessage, "success");
       await loadData();
+      return true;
+    } catch {
+      return false;
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleCreateCategory(e: FormEvent) {
+    e.preventDefault();
+    const created = await mutate(
+      () => apiFetch("/api/categories", { method: "POST", json: { name: categoryName } }),
+      "Category created.",
+    );
+    if (created) setCategoryName("");
   }
 
   async function handleCreateTag(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await fetch("/api/tags", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: tagName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error ?? "Failed to create tag.", "error");
-        return;
-      }
-      setTagName("");
-      showToast("Tag created.", "success");
-      await loadData();
-    } finally {
-      setLoading(false);
-    }
+    const created = await mutate(
+      () => apiFetch("/api/tags", { method: "POST", json: { name: tagName } }),
+      "Tag created.",
+    );
+    if (created) setTagName("");
   }
 
-  async function handleDeleteCategory(id: string) {
-    const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error ?? "Failed to delete category.", "error");
-      return;
-    }
-    showToast("Category deleted.", "success");
-    await loadData();
+  function handleDeleteCategory(id: string) {
+    void mutate(
+      () => apiFetch(`/api/categories?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+      "Category deleted.",
+    );
   }
 
-  async function handleDeleteTag(id: string) {
-    const res = await fetch(`/api/tags?id=${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error ?? "Failed to delete tag.", "error");
-      return;
-    }
-    showToast("Tag deleted.", "success");
-    await loadData();
+  function handleDeleteTag(id: string) {
+    void mutate(
+      () => apiFetch(`/api/tags?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+      "Tag deleted.",
+    );
   }
 
   return (
@@ -121,7 +115,7 @@ export default function CategoriesManager() {
               <span className="text-sm font-medium text-navy">{category.name}</span>
               <button
                 type="button"
-                onClick={() => void handleDeleteCategory(category.id)}
+                onClick={() => handleDeleteCategory(category.id)}
                 className="text-sm font-medium text-red-600 hover:underline"
               >
                 Delete
@@ -157,7 +151,7 @@ export default function CategoriesManager() {
               <span className="text-sm font-medium text-navy">#{tag.name}</span>
               <button
                 type="button"
-                onClick={() => void handleDeleteTag(tag.id)}
+                onClick={() => handleDeleteTag(tag.id)}
                 className="text-sm font-medium text-red-600 hover:underline"
               >
                 Delete

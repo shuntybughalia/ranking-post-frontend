@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const user = await getSession();
 
   if (!user) {
@@ -10,3 +11,5 @@ export async function GET() {
 
   return NextResponse.json({ user });
 }
+
+export const GET = withApiErrors(handleGET);

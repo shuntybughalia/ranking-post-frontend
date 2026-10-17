@@ -13,8 +13,9 @@ import {
 } from "@/lib/post-validation";
 import { canAccessAdmin } from "@/lib/permissions";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const scope = searchParams.get("scope");
 
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ articles });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await requireSession();
 
   if (!session) {
@@ -83,11 +84,6 @@ export async function POST(request: Request) {
     const parsedStatus = validatePostStatus(status) ?? "draft";
     const isAdmin = canAccessAdmin(session.role);
 
-    let finalStatus = parsedStatus;
-    if (!isAdmin && parsedStatus === "published") {
-      finalStatus = "pending";
-    }
-
     const article = await createArticle({
       title,
       slug,
@@ -100,7 +96,7 @@ export async function POST(request: Request) {
       metaDescription,
       author: session.name,
       authorId: session.id,
-      status: finalStatus,
+      status: parsedStatus,
       publishedAt: publishedAt ?? null,
       featured: isAdmin ? Boolean(featured) : false,
     });
@@ -114,3 +110,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const GET = withApiErrors(handleGET);
+export const POST = withApiErrors(handlePOST);

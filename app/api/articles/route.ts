@@ -5,13 +5,14 @@ import { createArticle, getAllArticles } from "@/lib/articles";
 import { getCategories } from "@/lib/categories";
 import { validateImage } from "@/lib/post-validation";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const articles = await getAllArticles();
   return NextResponse.json({ articles });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -71,3 +72,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const GET = withApiErrors(handleGET);
+export const POST = withApiErrors(handlePOST);

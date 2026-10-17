@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
 import { createUser } from "@/lib/users";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const body = await request.json();
     const { name, email, password } = body;
@@ -31,3 +32,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export const POST = withApiErrors(handlePOST);

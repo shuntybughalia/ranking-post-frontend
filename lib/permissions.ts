@@ -14,10 +14,6 @@ export function isSuperAdmin(role?: UserRole): boolean {
   return normalizeRole(role) === "super_admin";
 }
 
-export function canManageUsers(role?: UserRole): boolean {
-  return isSuperAdmin(role);
-}
-
 export function getPostLoginRedirect(
   role: UserRole,
   requestedRedirect?: string | null,

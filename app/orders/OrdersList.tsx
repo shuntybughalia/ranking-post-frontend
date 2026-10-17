@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ApiError, apiFetch, getErrorMessage } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 import type { Order } from "@/lib/types";
 
 const statusColors: Record<string, string> = {
@@ -19,16 +21,14 @@ export default function OrdersList() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/orders")
-      .then((res) => {
-        if (res.status === 401) {
+    apiFetch<{ orders?: Order[] }>("/api/orders", { toastOnError: false })
+      .then((data) => setOrders(data.orders ?? []))
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 401) {
           router.push("/login?redirect=/orders");
-          return null;
+          return;
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (data) setOrders(data.orders ?? []);
+        showToast(getErrorMessage(error), "error");
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -38,18 +38,14 @@ export default function OrdersList() {
     setCancellingId(id);
 
     try {
-      const res = await fetch(`/api/orders/${id}`, {
+      const data = await apiFetch<{ order: Order }>(`/api/orders/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
+        json: { status: "cancelled" },
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setOrders((prev) =>
-          prev.map((o) => (o.id === id ? data.order : o)),
-        );
-      }
+      setOrders((prev) => prev.map((o) => (o.id === id ? data.order : o)));
+      showToast("Order cancelled.", "success");
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setCancellingId(null);
     }
@@ -70,7 +66,7 @@ export default function OrdersList() {
           <p className="text-muted">You haven&apos;t placed any orders yet.</p>
           <Link
             href="/market"
-            className="mt-4 inline-block rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-navy hover:opacity-90"
+            className="mt-4 inline-block rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-ink hover:opacity-90"
           >
             Browse Marketplace
           </Link>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
-import Footer from "./components/Footer";
+import Footer from "@/app/components/layout/Footer";
+import Header from "@/app/components/layout/Header";
+import { Toaster } from "@/app/components/ui/Toast";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -46,8 +48,10 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
+        <Header />
         {children}
         <Footer />
+        <Toaster />
       </body>
     </html>
   );

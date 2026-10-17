@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 
 interface DeleteUserButtonProps {
   userId: string;
@@ -26,16 +28,11 @@ export default function DeleteUserButton({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${userId}`, { method: "DELETE" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        window.alert(data.error ?? "Failed to delete user.");
-        return;
-      }
-
+      await apiFetch(`/api/users/${userId}`, { method: "DELETE" });
+      showToast("User deleted.", "success");
       router.push("/admin/users");
-      router.refresh();
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setLoading(false);
     }

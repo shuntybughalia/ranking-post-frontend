@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "../components/Header";
 import { getPlatformStats } from "@/lib/stats";
 import { articleCategories } from "@/lib/types";
 
@@ -16,7 +15,6 @@ export default async function StatsPage() {
 
   return (
     <>
-      <Header />
       <section className="bg-navy px-6 py-12 text-center">
         <h1 className="text-3xl font-bold text-white md:text-4xl">
           Platform Stats

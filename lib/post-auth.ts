@@ -16,6 +16,3 @@ export function canDeletePost(user: SessionUser, post: Article): boolean {
   return canEditPost(user, post);
 }
 
-export function canModeratePost(user: SessionUser): boolean {
-  return canAccessAdmin(user.role);
-}

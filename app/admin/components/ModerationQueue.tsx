@@ -3,30 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Article } from "@/lib/types";
-import { useToast } from "@/app/components/Toast";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 
 interface ModerationQueueProps {
   articles: Article[];
 }
 
 export default function ModerationQueue({ articles: initialArticles }: ModerationQueueProps) {
-  const { showToast } = useToast();
   const [articles, setArticles] = useState(initialArticles);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleApprove(id: string) {
     setLoadingId(id);
     try {
-      const res = await fetch(`/api/posts/${id}/approve`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error ?? "Failed to approve post.", "error");
-        return;
-      }
+      await apiFetch(`/api/posts/${id}/approve`, { method: "POST" });
       setArticles((current) => current.filter((article) => article.id !== id));
       showToast("Post approved and published.", "success");
     } catch {
-      showToast("Failed to approve post.", "error");
+      // apiFetch already showed the error toast.
     } finally {
       setLoadingId(null);
     }
@@ -36,20 +31,11 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
     const reason = window.prompt("Rejection reason (optional):") ?? "Rejected by admin.";
     setLoadingId(id);
     try {
-      const res = await fetch(`/api/posts/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast(data.error ?? "Failed to reject post.", "error");
-        return;
-      }
+      await apiFetch(`/api/posts/${id}/reject`, { method: "POST", json: { reason } });
       setArticles((current) => current.filter((article) => article.id !== id));
       showToast("Post rejected.", "success");
     } catch {
-      showToast("Failed to reject post.", "error");
+      // apiFetch already showed the error toast.
     } finally {
       setLoadingId(null);
     }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getOrders, updateOrderStatus } from "@/lib/orders";
 import type { OrderStatus } from "@/lib/types";
+import { withApiErrors } from "@/lib/api-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -14,7 +15,7 @@ const validStatuses: OrderStatus[] = [
   "cancelled",
 ];
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function handlePATCH(request: Request, context: RouteContext) {
   const session = await getSession();
 
   if (!session) {
@@ -50,3 +51,5 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 }
+
+export const PATCH = withApiErrors(handlePATCH);

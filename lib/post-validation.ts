@@ -1,4 +1,3 @@
-import { articleCategories } from "./types";
 import type { PostStatus } from "./types";
 
 const POST_STATUSES: PostStatus[] = ["draft", "pending", "published", "rejected"];
@@ -66,6 +65,9 @@ export function validateImage(image: string): string | null {
     return null;
   }
 
+  // Images uploaded through /api/images (or local dev uploads) are site-relative.
+  if (/^\/(api\/images|uploads)\/[\w.-]+$/.test(trimmed)) return null;
+
   try {
     const url = new URL(trimmed);
     if (!["http:", "https:"].includes(url.protocol)) {
@@ -84,11 +86,3 @@ export function validateCategoryName(name: string): string | null {
   return null;
 }
 
-export function resolveCategoryName(categoryId: string, categories: { id: string; name: string }[]): string | null {
-  const category = categories.find((c) => c.id === categoryId);
-  if (!category) return null;
-  if (!articleCategories.includes(category.name as (typeof articleCategories)[number])) {
-    return category.name as (typeof articleCategories)[number];
-  }
-  return category.name;
-}

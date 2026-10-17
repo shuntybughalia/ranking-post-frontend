@@ -1,11 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --navy: #0a2540;
-  --navy-dark: #061a2e;
-  --accent: #22d3ee;
+  --background: #faf7f0;
+  --foreground: #111111;
+  /* Brand palette from the logo: black, gold and cream. */
+  --ink: #0b0b0b;
+  --gold: #d6a531;
+  --gold-light: #f1c75b;
+  /* Darker gold for text on light backgrounds (keeps contrast readable). */
+  --gold-dark: #94680a;
+  --cream: #faf5ea;
+  --navy: var(--ink);
+  --navy-dark: #000000;
+  --accent: var(--gold);
   --muted: #64748b;
   --border: #e2e8f0;
 }
@@ -16,9 +23,33 @@
   --color-navy: var(--navy);
   --color-navy-dark: var(--navy-dark);
   --color-accent: var(--accent);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-cream: var(--cream);
   --color-muted: var(--muted);
   --color-border: var(--border);
   --font-sans: var(--font-poppins);
+}
+
+/* Tailwind v4 resets buttons to the default cursor; make every control feel clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary,
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 body {

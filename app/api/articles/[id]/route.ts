@@ -4,12 +4,13 @@ import { deleteArticle, getArticleById, updateArticle } from "@/lib/articles";
 import { getCategories } from "@/lib/categories";
 import { validateImage } from "@/lib/post-validation";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
+import { withApiErrors } from "@/lib/api-handler";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+async function handleGET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   const article = await getArticleById(id);
 
@@ -20,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
   return NextResponse.json({ article });
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function handlePATCH(request: Request, context: RouteContext) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -82,7 +83,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+async function handleDELETE(_request: Request, context: RouteContext) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -101,3 +102,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   return NextResponse.json({ success: true });
 }
+
+export const GET = withApiErrors(handleGET);
+export const PATCH = withApiErrors(handlePATCH);
+export const DELETE = withApiErrors(handleDELETE);

@@ -2,9 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/app/components/Header";
 import MyPostsDashboard from "./MyPostsDashboard";
-import { ToastProvider } from "@/app/components/Toast";
+import { ApiError, apiFetch } from "@/lib/api-client";
 import type { Article, PostStats } from "@/lib/types";
 
 interface MyPostsPageClientProps {
@@ -12,34 +11,17 @@ interface MyPostsPageClientProps {
   stats: PostStats;
 }
 
-function MyPostsContent({
-  articles,
-  stats,
-}: MyPostsPageClientProps) {
+export default function MyPostsPageClient({ articles, stats }: MyPostsPageClientProps) {
   const router = useRouter();
 
+  // Bounce to login if the session expired while the page was cached.
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => {
-        if (res.status === 401) {
-          router.push("/login?redirect=/my-posts");
-        }
-      })
-      .catch(() => router.push("/login?redirect=/my-posts"));
+    apiFetch("/api/auth/me", { toastOnError: false }).catch((error) => {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login?redirect=/my-posts");
+      }
+    });
   }, [router]);
 
-  return (
-    <>
-      <Header />
-      <MyPostsDashboard initialArticles={articles} initialStats={stats} />
-    </>
-  );
-}
-
-export default function MyPostsPageClient(props: MyPostsPageClientProps) {
-  return (
-    <ToastProvider>
-      <MyPostsContent {...props} />
-    </ToastProvider>
-  );
+  return <MyPostsDashboard initialArticles={articles} initialStats={stats} />;
 }

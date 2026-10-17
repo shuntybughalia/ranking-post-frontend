@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdminSession } from "@/lib/admin-auth";
 import { getUsers, toPublicUser } from "@/lib/users";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const session = await requireSuperAdminSession();
 
   if (!session) {
@@ -17,3 +18,5 @@ export async function GET() {
     ),
   });
 }
+
+export const GET = withApiErrors(handleGET);

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getPostStats } from "@/lib/articles";
 import { requireSession } from "@/lib/post-auth";
 import { canAccessAdmin } from "@/lib/permissions";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const session = await requireSession();
 
   if (!session) {
@@ -16,3 +17,5 @@ export async function GET() {
 
   return NextResponse.json({ stats });
 }
+
+export const GET = withApiErrors(handleGET);

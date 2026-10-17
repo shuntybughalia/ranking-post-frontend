@@ -1,21 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Header from "../../components/Header";
-import ArticleCard from "../../components/ArticleCard";
-import ArticleContent from "../../components/ArticleContent";
-import BlogPostJsonLd from "../../components/BlogPostJsonLd";
-import FeaturedImage from "../../components/FeaturedImage";
-import SocialShare from "../../components/SocialShare";
+import ArticleCard from "@/app/components/blog/ArticleCard";
+import ArticleContent from "@/app/components/blog/ArticleContent";
+import BlogPostJsonLd from "@/app/components/blog/BlogPostJsonLd";
+import ArticleViewTracker from "@/app/components/blog/ArticleViewTracker";
+import PostImage from "@/app/components/blog/PostImage";
+import PostSidebar from "@/app/components/blog/PostSidebar";
+import { siteContainer } from "@/app/components/layout/siteContainer";
+import SocialShare from "@/app/components/blog/SocialShare";
 import {
   getAdjacentArticles,
   getArticleBySlug,
-  getArticles,
-  incrementArticleViews,
+  getArticleListItems,
 } from "@/lib/articles";
 import { getPostUrl } from "@/lib/site-url";
 
-export const dynamic = "force-dynamic";
+// Cache each post for 60s (ISR); edits call revalidatePath for instant updates.
+export const revalidate = 60;
+
+// Render posts on first visit instead of at build time (keeps builds off the DB).
+export function generateStaticParams() {
+  return [];
+}
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -60,16 +67,33 @@ export async function generateMetadata({
   };
 }
 
+function formatLongDate(article: { publishedAt: string | null; createdAt: string; date: string }) {
+  const parsed = new Date(article.publishedAt ?? article.createdAt);
+  if (Number.isNaN(parsed.getTime())) return article.date;
+  return parsed.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function FolderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
 
   if (!article) notFound();
 
-  await incrementArticleViews(article.id);
-
   const [articles, adjacent] = await Promise.all([
-    getArticles(),
+    getArticleListItems(),
     getAdjacentArticles(slug),
   ]);
 
@@ -80,96 +104,94 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const postUrl = getPostUrl(slug);
 
   return (
-    <>
+    <div className="flex-1 bg-white">
       <BlogPostJsonLd article={article} />
-      <Header />
+      <ArticleViewTracker articleId={article.id} />
 
-      <article>
-        <div className="relative h-64 w-full md:h-80 lg:h-96">
-          <FeaturedImage src={article.image} alt={article.title} priority />
-          <div className="absolute inset-0 bg-navy/50" />
-        </div>
-
-        <div className="mx-auto max-w-3xl px-6 py-10">
-          <Link
-            href="/blog"
-            className="mb-6 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-navy"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back to Blog
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-navy">
-              {article.category}
-            </span>
-            {article.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-muted"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-
-          <h1 className="mt-4 text-3xl font-bold leading-tight text-navy md:text-4xl">
+      <div className={`${siteContainer} grid gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12`}>
+        <article className="min-w-0">
+          <h1 className="text-[32px] font-bold leading-[1.15] text-[#3a3a3a] md:text-[44px] lg:text-[52px]">
             {article.title}
           </h1>
 
-          <div className="mt-6 flex flex-col gap-4 border-b border-border pb-8 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-sm font-semibold text-white">
-                {article.author.charAt(0)}
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px]">
+            <span className="inline-flex items-center gap-2 font-semibold text-[#3a3a3a]">
+              <span className="text-muted">
+                <FolderIcon />
+              </span>
+              {article.author}
+            </span>
+            <span className="text-muted">{formatLongDate(article)}</span>
+            <Link
+              href={`/blog?category=${encodeURIComponent(article.category)}`}
+              className="rounded-full bg-cream px-3 py-0.5 text-[13px] font-medium text-gold-dark transition-colors hover:bg-gold hover:text-ink"
+            >
+              {article.category}
+            </Link>
+            <span className="text-muted">{article.readTime}</span>
+          </div>
+
+          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden bg-[#e9e5dc]">
+            <PostImage
+              src={article.image}
+              alt={article.title}
+              sizes="(max-width: 1023px) 100vw, 800px"
+              preload
+            />
+          </div>
+
+          <div className="mt-8">
+            <ArticleContent content={article.content} />
+          </div>
+
+          <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+            {article.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {article.tags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-cream px-3 py-1 text-xs font-medium text-muted">
+                    #{tag}
+                  </span>
+                ))}
               </div>
-              <div>
-                <p className="font-medium text-navy">{article.author}</p>
-                <p className="text-sm text-muted">
-                  {article.date} · {article.readTime}
-                </p>
-              </div>
-            </div>
+            ) : (
+              <div />
+            )}
             <SocialShare url={postUrl} title={article.title} />
           </div>
 
-          <ArticleContent content={article.content} />
-        </div>
-      </article>
+          {(adjacent.previous || adjacent.next) && (
+            <nav aria-label="More posts" className="mt-8 grid gap-4 sm:grid-cols-2">
+              {adjacent.previous ? (
+                <Link
+                  href={`/blog/${adjacent.previous.slug}`}
+                  className="rounded-md border border-border px-4 py-3 text-sm transition-colors hover:border-gold"
+                >
+                  <span className="text-muted">Previous</span>
+                  <p className="font-medium text-ink">{adjacent.previous.title}</p>
+                </Link>
+              ) : (
+                <div />
+              )}
+              {adjacent.next && (
+                <Link
+                  href={`/blog/${adjacent.next.slug}`}
+                  className="rounded-md border border-border px-4 py-3 text-sm transition-colors hover:border-gold sm:text-right"
+                >
+                  <span className="text-muted">Next</span>
+                  <p className="font-medium text-ink">{adjacent.next.title}</p>
+                </Link>
+              )}
+            </nav>
+          )}
+        </article>
 
-      <section className="border-t border-border bg-white px-6 py-8">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 sm:flex-row sm:justify-between">
-          {adjacent.previous ? (
-            <Link
-              href={`/blog/${adjacent.previous.slug}`}
-              className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-slate-50"
-            >
-              <span className="text-muted">Previous</span>
-              <p className="font-medium text-navy">{adjacent.previous.title}</p>
-            </Link>
-          ) : (
-            <div />
-          )}
-          {adjacent.next ? (
-            <Link
-              href={`/blog/${adjacent.next.slug}`}
-              className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-slate-50 sm:text-right"
-            >
-              <span className="text-muted">Next</span>
-              <p className="font-medium text-navy">{adjacent.next.title}</p>
-            </Link>
-          ) : (
-            <div />
-          )}
-        </div>
-      </section>
+        <PostSidebar articles={articles} currentSlug={slug} />
+      </div>
 
       {related.length > 0 && (
-        <section className="border-t border-border bg-slate-50 px-6 py-12">
-          <div className="mx-auto max-w-6xl">
-            <h2 className="mb-6 text-xl font-bold text-navy">Related Articles</h2>
+        <section className="border-t border-border bg-cream py-12">
+          <div className={siteContainer}>
+            <h2 className="mb-6 text-xl font-bold text-ink">Related Articles</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((a) => (
                 <ArticleCard key={a.id} article={a} />
@@ -178,6 +200,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
         </section>
       )}
-    </>
+    </div>
   );
 }

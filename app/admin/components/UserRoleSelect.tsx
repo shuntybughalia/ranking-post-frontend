@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 import type { UserRole } from "@/lib/types";
 
 interface UserRoleSelectProps {
@@ -22,21 +24,12 @@ export default function UserRoleSelect({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        window.alert(data.error ?? "Failed to update role.");
-        return;
-      }
-
+      await apiFetch(`/api/users/${userId}`, { method: "PATCH", json: { role: newRole } });
       setRole(newRole);
+      showToast("Role updated.", "success");
       router.refresh();
+    } catch {
+      // apiFetch already showed the error toast.
     } finally {
       setLoading(false);
     }

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Article, PostStats } from "@/lib/types";
-import ConfirmModal from "@/app/components/ConfirmModal";
-import PostStatsCards from "@/app/components/PostStatsCards";
-import { useToast } from "@/app/components/Toast";
+import ConfirmModal from "@/app/components/ui/ConfirmModal";
+import PostStatsCards from "@/app/components/posts/PostStatsCards";
+import { apiFetch } from "@/lib/api-client";
+import { showToast } from "@/lib/toast";
 
 interface MyPostsDashboardProps {
   initialArticles: Article[];
@@ -23,7 +24,6 @@ export default function MyPostsDashboard({
   initialArticles,
   initialStats,
 }: MyPostsDashboardProps) {
-  const { showToast } = useToast();
   const [articles, setArticles] = useState(initialArticles);
   const [stats] = useState(initialStats);
   const [query, setQuery] = useState("");
@@ -48,19 +48,12 @@ export default function MyPostsDashboard({
     setDeleting(true);
 
     try {
-      const res = await fetch(`/api/posts/${deleteId}`, { method: "DELETE" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        showToast(data.error ?? "Failed to delete post.", "error");
-        return;
-      }
-
+      await apiFetch(`/api/posts/${deleteId}`, { method: "DELETE" });
       setArticles((current) => current.filter((article) => article.id !== deleteId));
       showToast("Post deleted successfully.", "success");
       setDeleteId(null);
     } catch {
-      showToast("Failed to delete post.", "error");
+      // apiFetch already showed the error toast.
     } finally {
       setDeleting(false);
     }
@@ -77,7 +70,7 @@ export default function MyPostsDashboard({
         </div>
         <Link
           href="/submit"
-          className="inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-navy hover:opacity-90"
+          className="inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-ink hover:opacity-90"
         >
           Write a Post
         </Link>

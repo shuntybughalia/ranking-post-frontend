@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { createCategory, deleteCategory, getCategories } from "@/lib/categories";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { validateCategoryName } from "@/lib/post-validation";
+import { withApiErrors } from "@/lib/api-handler";
 
-export async function GET() {
+async function handleGET() {
   const categories = await getCategories();
   return NextResponse.json({ categories });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -54,3 +55,7 @@ export async function DELETE(request: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+export const GET = withApiErrors(handleGET);
+export const POST = withApiErrors(handlePOST);
+export const DELETE = withApiErrors(handleDELETE);
