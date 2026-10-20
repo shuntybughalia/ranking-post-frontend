@@ -6,13 +6,10 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { contentToEditorHtml, stripHtml } from "@/lib/content";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { Article, BlogCategory, PostStatus } from "@/lib/types";
-import { prepareImageForUpload } from "@/app/components/posts/prepareImageForUpload";
 import RichTextEditor from "@/app/admin/components/RichTextEditor";
 import { apiFetch, getErrorMessage } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
 
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const AUTOSAVE_KEY_PREFIX = "rankingpost-draft-";
 
 interface PostFormProps {
@@ -23,20 +20,9 @@ interface PostFormProps {
 }
 
 function validateClientImage(image: string): string | null {
-  if (!image.trim()) return "Featured image is required.";
+  if (!image.trim()) return "Featured image URL is required.";
 
-  if (image.startsWith("data:")) {
-    const match = image.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return "Invalid image data.";
-    const [, mime, base64] = match;
-    if (!ALLOWED_IMAGE_TYPES.includes(mime)) {
-      return "Image must be JPEG, PNG, WebP, or GIF.";
-    }
-    const size = Math.ceil((base64.length * 3) / 4);
-    if (size > MAX_IMAGE_BYTES) return "Image must be 4 MB or smaller.";
-    return null;
-  }
-
+  // Posts created before URL-only images keep their previously uploaded file.
   if (/^\/(api\/images|uploads)\/[\w.-]+$/.test(image)) return null;
 
   try {
@@ -75,7 +61,7 @@ export default function PostForm({
   const [metaDescription, setMetaDescription] = useState(
     article?.metaDescription ?? "",
   );
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
   const [publishedAt, setPublishedAt] = useState(
     article?.publishedAt?.slice(0, 16) ??
       new Date().toISOString().slice(0, 16),
@@ -178,33 +164,9 @@ export default function PostForm({
     }
   }
 
-  async function handleImageUpload(file: File | null) {
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setError("Image must be JPEG, PNG, WebP, or GIF.");
-      return;
-    }
-
-    setError("");
-    setUploadingImage(true);
-
-    try {
-      const prepared = await prepareImageForUpload(file);
-      if (prepared.size > MAX_IMAGE_BYTES) {
-        setError("Image must be 4 MB or smaller.");
-        return;
-      }
-
-      const body = new FormData();
-      body.append("file", prepared);
-      const { url } = await apiFetch<{ url: string }>("/api/images", { method: "POST", body });
-      setImage(url);
-    } catch (error) {
-      setError(getErrorMessage(error));
-    } finally {
-      setUploadingImage(false);
-    }
+  function handleImageChange(value: string) {
+    setImage(value.trim());
+    setImagePreviewFailed(false);
   }
 
   async function submitPost(nextStatus: PostStatus) {
@@ -324,32 +286,36 @@ export default function PostForm({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-navy">
-            Featured Image *
+          <label htmlFor="image" className="mb-1.5 block text-sm font-medium text-navy">
+            Featured Image URL *
           </label>
           <div className="space-y-3">
             <input
-              type="file"
-              accept={ALLOWED_IMAGE_TYPES.join(",")}
-              disabled={uploadingImage}
-              onChange={(e) => void handleImageUpload(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink"
-            />
-            <input
+              id="image"
+              type="url"
+              inputMode="url"
               value={image.startsWith("data:") ? "" : image}
-              disabled={uploadingImage}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="Or paste an image URL"
+              onChange={(e) => handleImageChange(e.target.value)}
+              placeholder="https://example.com/image.jpg"
               className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
             />
-            {image && (
-              // Preview may be a pasted URL from any host or a local data URI.
+            <p className="text-xs text-muted">
+              Paste a direct link to a JPEG, PNG, WebP or GIF image. File uploads aren&apos;t supported.
+            </p>
+            {image && !imagePreviewFailed && (
+              // Preview is a pasted URL from any host, so next/image can't optimise it.
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={image}
                 alt="Featured preview"
+                onError={() => setImagePreviewFailed(true)}
                 className="h-40 w-full rounded-lg object-cover"
               />
+            )}
+            {image && imagePreviewFailed && (
+              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                Couldn&apos;t load an image from this URL. Check that it links directly to an image.
+              </p>
             )}
           </div>
         </div>
@@ -470,7 +436,7 @@ export default function PostForm({
         <div className="flex flex-wrap gap-3 pt-2">
           <button
             type="button"
-            disabled={loading || uploadingImage}
+            disabled={loading}
             onClick={() => void submitPost("draft")}
             className="rounded-lg border border-border px-6 py-3 text-sm font-semibold text-navy hover:bg-slate-50 disabled:opacity-60"
           >
@@ -478,10 +444,10 @@ export default function PostForm({
           </button>
           <button
             type="submit"
-            disabled={loading || uploadingImage}
+            disabled={loading}
             className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-60"
           >
-            {loading ? "Publishing..." : uploadingImage ? "Uploading image..." : "Publish Post"}
+            {loading ? "Publishing..." : "Publish Post"}
           </button>
           <Link
             href={redirectTo}

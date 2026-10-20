@@ -10,7 +10,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
-import { useCallback, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useState } from "react";
 
 interface RichTextEditorProps {
   value: string;
@@ -54,7 +54,6 @@ export default function RichTextEditor({
   placeholder = "Write your article...",
 }: RichTextEditorProps) {
   const [, setTick] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -107,34 +106,13 @@ export default function RichTextEditor({
       "https://images.unsplash.com/...",
     );
     if (!url?.trim()) return;
-    editor.chain().focus().setImage({ src: url.trim() }).run();
+    const src = url.trim();
+    if (!/^https?:\/\//i.test(src)) {
+      window.alert("Image URL must start with http:// or https://.");
+      return;
+    }
+    editor.chain().focus().setImage({ src }).run();
   }, [editor]);
-
-  const handleImageUpload = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !editor) return;
-
-      if (!file.type.startsWith("image/")) {
-        window.alert("Please select an image file.");
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        window.alert("Image must be under 5 MB.");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const src = reader.result as string;
-        editor.chain().focus().setImage({ src }).run();
-      };
-      reader.readAsDataURL(file);
-      e.target.value = "";
-    },
-    [editor],
-  );
 
   if (!editor) {
     return (
@@ -353,23 +331,6 @@ export default function RichTextEditor({
             <polyline points="21 15 16 10 5 21" />
           </svg>
         </ToolBtn>
-        <ToolBtn
-          onClick={() => fileInputRef.current?.click()}
-          title="Upload image from computer"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-        </ToolBtn>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageUpload}
-        />
         <ToolBtn
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Horizontal line"

@@ -5,7 +5,11 @@ import { MongoClient, type Db } from "mongodb";
 const globalForMongo = globalThis as typeof globalThis & {
   _mongoClient?: MongoClient;
   _mongoDb?: Db;
+  _mongoClientOptionsKey?: string;
 };
+
+// Bump when client options change so a dev server's hot reload drops the old cached client.
+const CLIENT_OPTIONS_KEY = "socket-90s-connect-30s";
 
 function getDnsServers(): string[] {
   const configured = process.env.MONGODB_DNS_SERVERS?.split(",")
@@ -111,6 +115,16 @@ export async function getDb(): Promise<Db> {
     );
   }
 
+  if (
+    globalForMongo._mongoClient &&
+    globalForMongo._mongoClientOptionsKey !== CLIENT_OPTIONS_KEY
+  ) {
+    const stale = globalForMongo._mongoClient;
+    globalForMongo._mongoClient = undefined;
+    globalForMongo._mongoDb = undefined;
+    stale.close().catch(() => {});
+  }
+
   if (globalForMongo._mongoDb) {
     return globalForMongo._mongoDb;
   }
@@ -124,15 +138,18 @@ export async function getDb(): Promise<Db> {
     globalForMongo._mongoClient ??
     new MongoClient(resolvedUri, {
       maxIdleTimeMS: 60000,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 15000,
+      // New pool connections handshake while large reads saturate slow links; 5s isn't enough there.
+      connectTimeoutMS: 30000,
+      // Article stores are single multi-MB documents; slow links need well over 20s to read them.
+      socketTimeoutMS: 90000,
       ...(allowInvalidCerts ? { tlsAllowInvalidCertificates: true } : {}),
     });
 
   if (!globalForMongo._mongoClient) {
     await client.connect();
     globalForMongo._mongoClient = client;
+    globalForMongo._mongoClientOptionsKey = CLIENT_OPTIONS_KEY;
   }
 
   globalForMongo._mongoDb = client.db(getDbName());

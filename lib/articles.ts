@@ -44,10 +44,17 @@ let articlesMemoryCache: { articles: Article[]; expiresAt: number } | null =
 let listingMemoryCache: { articles: Article[]; expiresAt: number } | null =
   null;
 let articlesInflight: Promise<Article[]> | null = null;
+// Last successful load, kept past its TTL so reads never block on (or fail with) a slow database.
+let lastKnownArticles: Article[] | null = null;
+// Bumped on every invalidation so a refresh that started before a write can't restore pre-write data.
+let articlesGeneration = 0;
 
 function invalidateArticlesMemoryCache() {
   articlesMemoryCache = null;
   listingMemoryCache = null;
+  lastKnownArticles = null;
+  articlesInflight = null;
+  articlesGeneration += 1;
 }
 
 function estimateReadTime(content: string[]): string {
@@ -112,7 +119,8 @@ async function fetchArticlesRaw(): Promise<Article[]> {
     return articlesInflight;
   }
 
-  articlesInflight = (async () => {
+  const generation = articlesGeneration;
+  const inflight = (async () => {
     const articles = await readJson<LegacyArticle[]>(ARTICLES_FILE, []);
     const normalized = articles.map(normalizeArticle);
     const deduped = dedupeArticles(normalized);
@@ -125,20 +133,43 @@ async function fetchArticlesRaw(): Promise<Article[]> {
       await writeJson(ARTICLES_FILE, deduped);
     }
 
-    articlesMemoryCache = {
-      articles: deduped,
-      expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
-    };
+    if (generation === articlesGeneration) {
+      articlesMemoryCache = {
+        articles: deduped,
+        expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
+      };
+      lastKnownArticles = deduped;
+    }
 
     return deduped;
   })().finally(() => {
-    articlesInflight = null;
+    if (articlesInflight === inflight) articlesInflight = null;
   });
 
-  return articlesInflight;
+  articlesInflight = inflight;
+  return inflight;
 }
 
-const getArticlesRaw = cache(fetchArticlesRaw);
+/** Read path: serves the last good copy while refreshing in the background once the TTL expires. */
+async function loadArticlesForRead(): Promise<Article[]> {
+  if (articlesMemoryCache && articlesMemoryCache.expiresAt > Date.now()) {
+    return articlesMemoryCache.articles;
+  }
+
+  if (lastKnownArticles) {
+    fetchArticlesRaw().catch((error) => {
+      console.warn(
+        "Article refresh failed, serving cached copy:",
+        error instanceof Error ? error.message : error,
+      );
+    });
+    return lastKnownArticles;
+  }
+
+  return fetchArticlesRaw();
+}
+
+const getArticlesRaw = cache(loadArticlesForRead);
 
 function dedupeArticles(articles: Article[]): Article[] {
   const byId = new Map<string, Article>();

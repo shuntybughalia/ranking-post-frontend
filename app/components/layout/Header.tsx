@@ -12,6 +12,7 @@ import { siteContainer } from "@/app/components/layout/siteContainer";
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Blog", href: "/blog" },
+  { label: "Services", href: "/services" },
 ];
 
 export default function Header() {

@@ -15,6 +15,9 @@
   --accent: var(--gold);
   --muted: #64748b;
   --border: #e2e8f0;
+  /* Brand cursors: black arrow with a gold edge, and a gold arrow over clickable things. */
+  --cursor-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M4 3v19l5.2-4.8 3.4 7.8 3.4-1.5-3.3-7.6h6.9z' fill='%230b0b0b' stroke='%23d6a531' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 4 3, auto;
+  --cursor-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='4' cy='3' r='3' fill='%23f1c75b' opacity='.45'/%3E%3Cpath d='M4 3v19l5.2-4.8 3.4 7.8 3.4-1.5-3.3-7.6h6.9z' fill='%23d6a531' stroke='%230b0b0b' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 4 3, pointer;
 }
 
 @theme inline {
@@ -35,6 +38,11 @@
 
 /* Tailwind v4 resets buttons to the default cursor; make every control feel clickable. */
 @layer base {
+  html {
+    cursor: var(--cursor-default);
+  }
+
+  a[href],
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   select:not(:disabled),
@@ -42,14 +50,27 @@
   label[for],
   input[type="checkbox"]:not(:disabled),
   input[type="radio"]:not(:disabled),
-  input[type="file"]:not(:disabled) {
-    cursor: pointer;
+  input[type="file"]:not(:disabled),
+  input[type="color"]:not(:disabled) {
+    cursor: var(--cursor-pointer);
+  }
+
+  /* Inputs inherit the custom arrow, so restore the I-beam where people type. */
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="color"], [type="range"], [type="submit"], [type="button"]),
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
   }
 
   :disabled,
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
+}
+
+/* Tailwind's cursor-pointer utility would show the system hand instead of the brand cursor. */
+.cursor-pointer {
+  cursor: var(--cursor-pointer);
 }
 
 body {
