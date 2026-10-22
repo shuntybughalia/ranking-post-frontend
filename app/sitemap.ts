@@ -23,27 +23,28 @@ async function getPublishedArticlesForSitemap() {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
+  const articles = await getPublishedArticlesForSitemap();
+  // Newest post edit doubles as the "last changed" date for pages that list posts.
+  const latestPostUpdate = articles.reduce<string | undefined>(
+    (latest, article) =>
+      !latest || new Date(article.updatedAt) > new Date(latest) ? article.updatedAt : latest,
+    undefined,
+  );
 
+  // Only public, indexable routes that exist under app/. Auth-gated pages
+  // (login, register, submit, my-posts, orders, admin) are left out.
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${base}/`,
+      lastModified: latestPostUpdate,
       priority: 1.0,
-      changeFrequency: "weekly",
+      changeFrequency: "daily",
     },
     {
-      url: `${base}/about-us`,
-      priority: 0.8,
-      changeFrequency: "monthly",
-    },
-    {
-      url: `${base}/contact-us`,
-      priority: 0.8,
-      changeFrequency: "monthly",
-    },
-    {
-      url: `${base}/pricing`,
+      url: `${base}/blog`,
+      lastModified: latestPostUpdate,
       priority: 0.9,
-      changeFrequency: "weekly",
+      changeFrequency: "daily",
     },
     {
       url: `${base}/services`,
@@ -51,63 +52,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
     },
     {
-      url: `${base}/features`,
-      priority: 0.9,
+      url: `${base}/market`,
+      priority: 0.8,
       changeFrequency: "weekly",
     },
     {
-      url: `${base}/login`,
+      url: `${base}/stats`,
       priority: 0.5,
-      changeFrequency: "monthly",
-    },
-    {
-      url: `${base}/signup`,
-      priority: 0.5,
-      changeFrequency: "monthly",
-    },
-    {
-      url: `${base}/privacy-policy`,
-      priority: 0.4,
-      changeFrequency: "yearly",
-    },
-    {
-      url: `${base}/terms-and-conditions`,
-      priority: 0.4,
-      changeFrequency: "yearly",
-    },
-    {
-      url: `${base}/blog`,
-      priority: 0.9,
-      changeFrequency: "daily",
-    },
-    {
-      url: `${base}/blog/seo`,
-      priority: 0.8,
-      changeFrequency: "weekly",
-    },
-    {
-      url: `${base}/blog/content-marketing`,
-      priority: 0.8,
-      changeFrequency: "weekly",
-    },
-    {
-      url: `${base}/blog/guest-posting`,
-      priority: 0.8,
-      changeFrequency: "weekly",
-    },
-    {
-      url: `${base}/blog/digital-marketing`,
-      priority: 0.8,
-      changeFrequency: "weekly",
-    },
-    {
-      url: `${base}/blog/link-building`,
-      priority: 0.8,
       changeFrequency: "weekly",
     },
   ];
 
-  const articles = await getPublishedArticlesForSitemap();
   const blogPosts: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${base}/blog/${article.slug}`,
     lastModified: article.updatedAt,
