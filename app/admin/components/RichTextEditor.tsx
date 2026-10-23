@@ -10,7 +10,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
-import { useCallback, useState } from "react";
+import { ChangeEvent, useCallback, useRef, useState } from "react";
+import { UPLOAD_IMAGE_TYPES, uploadImageFile } from "@/lib/upload-image";
 
 interface RichTextEditorProps {
   value: string;
@@ -54,6 +55,8 @@ export default function RichTextEditor({
   placeholder = "Write your article...",
 }: RichTextEditorProps) {
   const [, setTick] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -90,7 +93,10 @@ export default function RichTextEditor({
   const setLink = useCallback(() => {
     if (!editor) return;
     const prev = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Enter URL", prev ?? "https://");
+    const url = window.prompt(
+      "Enter URL (use /blog/post-slug to link to another RankingPost page)",
+      prev ?? "https://",
+    );
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
@@ -113,6 +119,21 @@ export default function RichTextEditor({
     }
     editor.chain().focus().setImage({ src }).run();
   }, [editor]);
+
+  const handleImageFile = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so picking the same file again still fires a change event.
+      e.target.value = "";
+      if (!editor || !file) return;
+
+      setUploadingImage(true);
+      const src = await uploadImageFile(file);
+      setUploadingImage(false);
+      if (src) editor.chain().focus().setImage({ src, alt: file.name.replace(/\.[^.]+$/, "") }).run();
+    },
+    [editor],
+  );
 
   if (!editor) {
     return (
@@ -331,6 +352,28 @@ export default function RichTextEditor({
             <polyline points="21 15 16 10 5 21" />
           </svg>
         </ToolBtn>
+        <ToolBtn
+          onClick={() => imageInputRef.current?.click()}
+          disabled={uploadingImage}
+          title={uploadingImage ? "Uploading image..." : "Upload image from your computer"}
+        >
+          {uploadingImage ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-navy border-t-transparent" />
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          )}
+        </ToolBtn>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept={UPLOAD_IMAGE_TYPES.join(",")}
+          onChange={handleImageFile}
+          className="hidden"
+        />
         <ToolBtn
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Horizontal line"

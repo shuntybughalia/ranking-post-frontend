@@ -7,6 +7,7 @@ import {
 import { getCategories } from "@/lib/categories";
 import { requireSession } from "@/lib/post-auth";
 import {
+  parseFaqsInput,
   parseTagsInput,
   validateImage,
   validatePostStatus,
@@ -52,6 +53,7 @@ async function handlePOST(request: Request) {
       tags,
       metaTitle,
       metaDescription,
+      faqs,
       status,
       publishedAt,
       featured,
@@ -94,6 +96,7 @@ async function handlePOST(request: Request) {
       tags: parseTagsInput(tags),
       metaTitle,
       metaDescription,
+      faqs: parseFaqsInput(faqs),
       author: session.name,
       authorId: session.id,
       status: parsedStatus,

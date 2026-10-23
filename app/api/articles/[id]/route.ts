@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { deleteArticle, getArticleById, updateArticle } from "@/lib/articles";
 import { getCategories } from "@/lib/categories";
-import { validateImage } from "@/lib/post-validation";
+import { parseFaqsInput, validateImage } from "@/lib/post-validation";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
 import { withApiErrors } from "@/lib/api-handler";
 
@@ -37,7 +37,7 @@ async function handlePATCH(request: Request, context: RouteContext) {
 
   try {
     const body = await request.json();
-    const { title, excerpt, content, category, categoryId, image, featured } =
+    const { title, excerpt, content, category, categoryId, image, featured, faqs } =
       body;
 
     let resolvedCategoryId = categoryId;
@@ -66,6 +66,7 @@ async function handlePATCH(request: Request, context: RouteContext) {
       content,
       categoryId: resolvedCategoryId,
       image,
+      faqs: faqs !== undefined ? parseFaqsInput(faqs) : undefined,
       featured: featured !== undefined ? Boolean(featured) : undefined,
     });
 

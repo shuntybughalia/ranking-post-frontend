@@ -28,10 +28,29 @@ export default function BlogPostJsonLd({ article }: BlogPostJsonLdProps) {
     articleSection: article.category,
   };
 
+  const faqSchema =
+    article.faqs.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: article.faqs.map((faq) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: { "@type": "Answer", text: faq.answer },
+          })),
+        }
+      : null;
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
+    <>
+      <JsonLdScript data={schema} />
+      {faqSchema && <JsonLdScript data={faqSchema} />}
+    </>
   );
+}
+
+function JsonLdScript({ data }: { data: object }) {
+  // Escape "<" so author text like "</script>" can't break out of the tag.
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />
 }

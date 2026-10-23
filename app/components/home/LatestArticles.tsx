@@ -1,29 +1,10 @@
-import Link from "next/link";
 import type { ArticleListItem } from "@/app/data/articles";
 import ArticleCard from "@/app/components/blog/ArticleCard";
 
-interface LatestArticlesProps {
-  articles: ArticleListItem[];
-  showViewAll?: boolean;
-}
-
-export default function LatestArticles({
-  articles,
-  showViewAll = true,
-}: LatestArticlesProps) {
+export default function LatestArticles({ articles }: { articles: ArticleListItem[] }) {
   return (
-    <section className="mt-12">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-navy md:text-2xl">Latest Articles</h2>
-        {showViewAll && (
-          <Link
-            href="/blog"
-            className="text-sm font-medium text-muted transition-colors hover:text-navy"
-          >
-            View all
-          </Link>
-        )}
-      </div>
+    <section>
+      <h2 className="mb-6 text-center text-xl font-bold text-navy md:text-2xl">More Articles</h2>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {articles.map((article) => (

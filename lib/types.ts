@@ -5,12 +5,30 @@ export const articleCategories = [
   "Technology",
   "Finance",
   "Lifestyle",
+  "Digital Marketing",
+  "Education",
+  "Travel",
+  "Real Estate",
+  "Automotive",
+  "Fashion",
+  "Food",
+  "Sports",
+  "Entertainment",
+  "Home Improvement",
+  "Legal",
+  "Parenting",
 ] as const;
 
 export type ArticleCategory = (typeof articleCategories)[number];
 export type CategoryFilter = "All Posts" | ArticleCategory;
 
 export type PostStatus = "draft" | "pending" | "published" | "rejected";
+
+/** A question and plain-text answer shown in a post's FAQ accordion. */
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
 
 export interface Article {
   id: string;
@@ -29,6 +47,7 @@ export interface Article {
   tags: string[];
   metaTitle: string;
   metaDescription: string;
+  faqs: FaqItem[];
   status: PostStatus;
   publishedAt: string | null;
   createdAt: string;
@@ -133,6 +152,7 @@ export interface CreatePostInput {
   tags?: string[];
   metaTitle?: string;
   metaDescription?: string;
+  faqs?: FaqItem[];
   author: string;
   authorId: string;
   status: PostStatus;
@@ -150,6 +170,7 @@ export interface UpdatePostInput {
   tags?: string[];
   metaTitle?: string;
   metaDescription?: string;
+  faqs?: FaqItem[];
   status?: PostStatus;
   publishedAt?: string | null;
   featured?: boolean;

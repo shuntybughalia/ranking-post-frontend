@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ArticleCard from "@/app/components/blog/ArticleCard";
 import ArticleContent from "@/app/components/blog/ArticleContent";
 import BlogPostJsonLd from "@/app/components/blog/BlogPostJsonLd";
+import FaqAccordion from "@/app/components/blog/FaqAccordion";
 import ArticleViewTracker from "@/app/components/blog/ArticleViewTracker";
 import PostImage from "@/app/components/blog/PostImage";
 import PostSidebar from "@/app/components/blog/PostSidebar";
@@ -131,18 +132,23 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <span className="text-muted">{article.readTime}</span>
           </div>
 
-          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden bg-[#e9e5dc]">
+          {/* Shown at the image's own shape; very tall images are capped and letterboxed, not cropped. */}
+          <div className="mt-8 w-full overflow-hidden bg-[#e9e5dc]">
             <PostImage
               src={article.image}
               alt={article.title}
               sizes="(max-width: 1023px) 100vw, 800px"
               preload
+              natural
+              className="h-auto max-h-[75vh] w-full object-contain"
             />
           </div>
 
           <div className="mt-8">
             <ArticleContent content={article.content} />
           </div>
+
+          <FaqAccordion faqs={article.faqs} />
 
           <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
             {article.tags.length > 0 ? (

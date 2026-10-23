@@ -11,6 +11,7 @@ import {
   requireSession,
 } from "@/lib/post-auth";
 import {
+  parseFaqsInput,
   parseTagsInput,
   validateImage,
   validatePostStatus,
@@ -93,6 +94,7 @@ async function handlePATCH(request: Request, context: RouteContext) {
       tags: body.tags !== undefined ? parseTagsInput(body.tags) : undefined,
       metaTitle: body.metaTitle,
       metaDescription: body.metaDescription,
+      faqs: body.faqs !== undefined ? parseFaqsInput(body.faqs) : undefined,
       status,
       publishedAt: body.publishedAt,
       featured: isAdmin ? body.featured : undefined,

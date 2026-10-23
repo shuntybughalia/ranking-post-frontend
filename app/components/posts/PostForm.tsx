@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { contentToEditorHtml, stripHtml } from "@/lib/content";
 import { isValidSlug, slugify } from "@/lib/slug";
-import type { Article, BlogCategory, PostStatus } from "@/lib/types";
+import type { Article, BlogCategory, FaqItem, PostStatus } from "@/lib/types";
 import RichTextEditor from "@/app/admin/components/RichTextEditor";
 import { apiFetch, getErrorMessage } from "@/lib/api-client";
+import { INTERNAL_LINK_REQUIRED, hasInternalLink } from "@/lib/internal-links";
 import { showToast } from "@/lib/toast";
+import FaqEditor from "./FaqEditor";
+import ImageUploadButton from "./ImageUploadButton";
 
 const AUTOSAVE_KEY_PREFIX = "rankingpost-draft-";
 
@@ -20,9 +23,9 @@ interface PostFormProps {
 }
 
 function validateClientImage(image: string): string | null {
-  if (!image.trim()) return "Featured image URL is required.";
+  if (!image.trim()) return "Featured image is required.";
 
-  // Posts created before URL-only images keep their previously uploaded file.
+  // Older posts keep images stored by the site itself (MongoDB or local uploads).
   if (/^\/(api\/images|uploads)\/[\w.-]+$/.test(image)) return null;
 
   try {
@@ -45,6 +48,7 @@ export default function PostForm({
 }: PostFormProps) {
   const router = useRouter();
   const autosaveTimer = useRef<number | null>(null);
+  const submittingRef = useRef(false);
 
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,6 +65,7 @@ export default function PostForm({
   const [metaDescription, setMetaDescription] = useState(
     article?.metaDescription ?? "",
   );
+  const [faqs, setFaqs] = useState<FaqItem[]>(article?.faqs ?? []);
   const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
   const [publishedAt, setPublishedAt] = useState(
     article?.publishedAt?.slice(0, 16) ??
@@ -101,6 +106,7 @@ export default function PostForm({
       setTags(draft.tags ?? "");
       setMetaTitle(draft.metaTitle ?? "");
       setMetaDescription(draft.metaDescription ?? "");
+      setFaqs(Array.isArray(draft.faqs) ? draft.faqs : []);
       setPublishedAt(draft.publishedAt ?? new Date().toISOString().slice(0, 16));
       setContent(draft.content ?? "");
     } catch {
@@ -119,6 +125,7 @@ export default function PostForm({
       tags,
       metaTitle,
       metaDescription,
+      faqs,
       publishedAt,
       content,
     }),
@@ -132,6 +139,7 @@ export default function PostForm({
       tags,
       metaTitle,
       metaDescription,
+      faqs,
       publishedAt,
       content,
     ],
@@ -170,6 +178,8 @@ export default function PostForm({
   }
 
   async function submitPost(nextStatus: PostStatus) {
+    // A ref, not `loading`: a fast double click fires twice before React re-renders.
+    if (submittingRef.current) return;
     setError("");
 
     if (!title.trim() || !excerpt.trim() || !stripHtml(content)) {
@@ -193,6 +203,12 @@ export default function PostForm({
       return;
     }
 
+    if (nextStatus !== "draft" && !hasInternalLink(content)) {
+      setError(INTERNAL_LINK_REQUIRED);
+      return;
+    }
+
+    submittingRef.current = true;
     setLoading(true);
 
     const payload = {
@@ -205,6 +221,7 @@ export default function PostForm({
       tags,
       metaTitle: metaTitle || title,
       metaDescription: metaDescription || excerpt,
+      faqs,
       status: nextStatus,
       publishedAt:
         nextStatus === "published" ? new Date(publishedAt).toISOString() : null,
@@ -225,8 +242,10 @@ export default function PostForm({
         nextStatus === "draft" ? "Draft saved successfully." : "Post published successfully.",
         "success",
       );
+      // Stay locked while navigating away so the saved post can't be sent again.
       router.push(redirectTo);
     } catch (error) {
+      submittingRef.current = false;
       setError(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -287,20 +306,23 @@ export default function PostForm({
 
         <div>
           <label htmlFor="image" className="mb-1.5 block text-sm font-medium text-navy">
-            Featured Image URL *
+            Featured Image *
           </label>
           <div className="space-y-3">
-            <input
-              id="image"
-              type="url"
-              inputMode="url"
-              value={image.startsWith("data:") ? "" : image}
-              onChange={(e) => handleImageChange(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-            />
+            <div className="flex gap-3">
+              <input
+                id="image"
+                type="url"
+                inputMode="url"
+                value={image.startsWith("data:") ? "" : image}
+                onChange={(e) => handleImageChange(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+              />
+              <ImageUploadButton onUploaded={handleImageChange} disabled={loading} />
+            </div>
             <p className="text-xs text-muted">
-              Paste a direct link to a JPEG, PNG, WebP or GIF image. File uploads aren&apos;t supported.
+              Upload a JPEG, PNG, WebP or GIF (up to 4 MB), or paste a direct link to one.
             </p>
             {image && !imagePreviewFailed && (
               // Preview is a pasted URL from any host, so next/image can't optimise it.
@@ -309,7 +331,7 @@ export default function PostForm({
                 src={image}
                 alt="Featured preview"
                 onError={() => setImagePreviewFailed(true)}
-                className="h-40 w-full rounded-lg object-cover"
+                className="max-h-80 w-full rounded-lg bg-slate-100 object-contain"
               />
             )}
             {image && imagePreviewFailed && (
@@ -373,6 +395,18 @@ export default function PostForm({
             Content *
           </label>
           <RichTextEditor value={content} onChange={setContent} />
+          <p className="mt-2 text-xs text-muted">
+            Include at least one internal link to another RankingPost page (select text, click the
+            link button, and enter a URL like /blog/your-post).
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-1.5 block text-sm font-medium text-navy">FAQs</p>
+          <p className="mb-3 text-xs text-muted">
+            Optional. Shown as an accordion at the end of the post.
+          </p>
+          <FaqEditor value={faqs} onChange={setFaqs} />
         </div>
 
         <div>

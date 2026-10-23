@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
+import CategoryBar from "@/app/components/layout/CategoryBar";
 import Footer from "@/app/components/layout/Footer";
 import Header from "@/app/components/layout/Header";
 import { Toaster } from "@/app/components/ui/Toast";
@@ -49,6 +51,10 @@ export default function RootLayout({
           `}
         </Script>
         <Header />
+        {/* useSearchParams needs a Suspense boundary; the fallback reserves the bar's height. */}
+        <Suspense fallback={<div className="h-[57px] border-b border-border bg-slate-50" />}>
+          <CategoryBar />
+        </Suspense>
         {children}
         <Footer />
         <Toaster />

@@ -1,4 +1,4 @@
-import type { PostStatus } from "./types";
+import type { FaqItem, PostStatus } from "./types";
 
 const POST_STATUSES: PostStatus[] = ["draft", "pending", "published", "rejected"];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -78,6 +78,41 @@ export function validateImage(image: string): string | null {
   }
 
   return null;
+}
+
+const MAX_FAQS = 20;
+const MAX_FAQ_QUESTION_CHARS = 300;
+const MAX_FAQ_ANSWER_CHARS = 2000;
+
+/**
+ * Trims FAQ items and drops fully blank rows. Throws a user-facing Error for
+ * half-filled or oversized items (the post routes turn it into a 400).
+ */
+export function parseFaqsInput(input: unknown): FaqItem[] {
+  if (input === undefined || input === null) return [];
+  if (!Array.isArray(input)) throw new Error("Invalid FAQ data.");
+
+  const faqs = input
+    .map((item) => ({
+      question: typeof item?.question === "string" ? item.question.trim() : "",
+      answer: typeof item?.answer === "string" ? item.answer.trim() : "",
+    }))
+    .filter((item) => item.question || item.answer);
+
+  if (faqs.length > MAX_FAQS) {
+    throw new Error(`A post can have at most ${MAX_FAQS} FAQs.`);
+  }
+  if (faqs.some((item) => !item.question || !item.answer)) {
+    throw new Error("Each FAQ needs both a question and an answer.");
+  }
+  if (faqs.some((item) => item.question.length > MAX_FAQ_QUESTION_CHARS)) {
+    throw new Error(`FAQ questions must be ${MAX_FAQ_QUESTION_CHARS} characters or fewer.`);
+  }
+  if (faqs.some((item) => item.answer.length > MAX_FAQ_ANSWER_CHARS)) {
+    throw new Error(`FAQ answers must be ${MAX_FAQ_ANSWER_CHARS} characters or fewer.`);
+  }
+
+  return faqs;
 }
 
 export function validateCategoryName(name: string): string | null {

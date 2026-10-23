@@ -3,7 +3,13 @@
  * `images.remotePatterns` in next.config.ts). Images from any other host are
  * rendered as-is, so an unexpected host never breaks a page.
  */
-export const OPTIMIZED_IMAGE_HOSTS = ["images.unsplash.com", "gifyu.com", "**.gifyu.com"];
+const OPTIMIZED_IMAGE_HOSTS = ["images.unsplash.com", "gifyu.com", "**.gifyu.com"];
+
+/** Static hosts plus the S3 bucket (or its CDN) that uploads go to, set by next.config.ts. */
+export function getOptimizedImageHosts(): string[] {
+  const s3Host = process.env.NEXT_PUBLIC_S3_IMAGE_HOST;
+  return s3Host ? [...OPTIMIZED_IMAGE_HOSTS, s3Host] : OPTIMIZED_IMAGE_HOSTS;
+}
 
 function hostMatches(hostname: string, pattern: string) {
   if (pattern.startsWith("**.")) {
@@ -19,7 +25,7 @@ export function isOptimizableImage(src: string): boolean {
 
   try {
     const { hostname } = new URL(src);
-    return OPTIMIZED_IMAGE_HOSTS.some((pattern) => hostMatches(hostname, pattern));
+    return getOptimizedImageHosts().some((pattern) => hostMatches(hostname, pattern));
   } catch {
     return false;
   }

@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Binary } from "mongodb";
 import { getDb, isMongoConfigured } from "./mongodb";
+import { isS3Configured, uploadToS3 } from "./s3";
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80";
@@ -43,8 +44,9 @@ export function compactArticleImage(image: string | undefined | null): string {
 }
 
 /**
- * Stores an uploaded image and returns its public URL. MongoDB keeps it
- * durable on serverless hosts; without Mongo (local dev) it goes to /public/uploads.
+ * Stores an uploaded image and returns its public URL. AWS S3 is used when
+ * configured; otherwise MongoDB keeps it durable on serverless hosts, and
+ * without Mongo (local dev) it goes to /public/uploads.
  */
 export async function saveImage(buffer: Buffer, mime: string): Promise<string> {
   const ext = EXT_BY_MIME[mime];
@@ -52,6 +54,10 @@ export async function saveImage(buffer: Buffer, mime: string): Promise<string> {
 
   // Content hash as id: re-uploading the same image reuses the stored copy.
   const id = createHash("sha256").update(buffer).digest("hex").slice(0, 32);
+
+  if (isS3Configured()) {
+    return uploadToS3(`blog-images/${id}.${ext}`, buffer, mime);
+  }
 
   if (isMongoConfigured()) {
     const db = await getDb();
@@ -71,7 +77,7 @@ export async function saveImage(buffer: Buffer, mime: string): Promise<string> {
   }
 
   if (isServerless()) {
-    throw new Error("Image storage is not configured. Set MONGODB_URI.");
+    throw new Error("Image storage is not configured. Set the S3_* variables or MONGODB_URI.");
   }
 
   const filename = `${id}.${ext}`;

@@ -10,6 +10,7 @@ import {
   persistArticleImage,
 } from "./image-storage";
 import { isValidSlug, slugify } from "./post-validation";
+import { INTERNAL_LINK_REQUIRED, hasInternalLink } from "./internal-links";
 import { sanitizeHtml } from "./sanitize";
 import { syncTags } from "./tags";
 import type {
@@ -101,6 +102,7 @@ function normalizeArticle(raw: LegacyArticle): Article {
     tags: raw.tags ?? [],
     metaTitle: raw.metaTitle ?? raw.title,
     metaDescription: raw.metaDescription ?? raw.excerpt,
+    faqs: raw.faqs ?? [],
     status: raw.status ?? "published",
     publishedAt: raw.publishedAt ?? createdAt,
     createdAt,
@@ -398,10 +400,64 @@ function resolvePublishDate(
   return publishedAt ?? new Date().toISOString();
 }
 
-export async function createArticle(input: CreatePostInput): Promise<Article> {
+let articleWriteQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Runs article writes one at a time. Each write rewrites the whole article
+ * list, so overlapping requests (e.g. a double-clicked Publish) would otherwise
+ * miss each other: the second copy got a "-1" slug and was saved as a duplicate.
+ */
+function withArticleWriteLock<T>(task: () => Promise<T>): Promise<T> {
+  const run = articleWriteQueue.then(task, task);
+  articleWriteQueue = run.catch(() => undefined);
+  return run;
+}
+
+function normalizeForCompare(text: string): string {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+/** Body text this short is too generic to call a duplicate on its own. */
+const MIN_DUPLICATE_CONTENT_CHARS = 80;
+
+/** Throws when another post already has the same title or the same body text. */
+function assertNotDuplicate(
+  articles: Article[],
+  title: string,
+  sanitizedContent: string,
+  excludeId?: string,
+) {
+  const normalizedTitle = normalizeForCompare(title);
+  const normalizedContent = normalizeForCompare(stripHtml(sanitizedContent));
+  const compareContent = normalizedContent.length >= MIN_DUPLICATE_CONTENT_CHARS;
+
+  for (const article of articles) {
+    if (article.id === excludeId) continue;
+
+    if (normalizedTitle && normalizeForCompare(article.title) === normalizedTitle) {
+      throw new Error("A post with this title already exists. Please use a different title.");
+    }
+    if (
+      compareContent &&
+      normalizeForCompare(stripHtml(article.content.join(" "))) === normalizedContent
+    ) {
+      throw new Error(`This content is already published as "${article.title}".`);
+    }
+  }
+}
+
+export function createArticle(input: CreatePostInput): Promise<Article> {
+  return withArticleWriteLock(() => createArticleUnlocked(input));
+}
+
+async function createArticleUnlocked(input: CreatePostInput): Promise<Article> {
   invalidateArticlesMemoryCache();
   const articles = await fetchArticlesRaw();
   const sanitizedContent = sanitizeHtml(input.content.trim());
+  assertNotDuplicate(articles, input.title, sanitizedContent);
+  if (input.status !== "draft" && !hasInternalLink(sanitizedContent)) {
+    throw new Error(INTERNAL_LINK_REQUIRED);
+  }
   const paragraphs = parseArticleContent(sanitizedContent);
   const slug = await resolveUniqueSlug(input.slug, input.title, articles);
   const { categoryId, category } = await resolveCategory(input.categoryId);
@@ -426,6 +482,7 @@ export async function createArticle(input: CreatePostInput): Promise<Article> {
     tags,
     metaTitle: input.metaTitle?.trim() || input.title.trim(),
     metaDescription: input.metaDescription?.trim() || input.excerpt.trim(),
+    faqs: input.faqs ?? [],
     status: input.status,
     publishedAt,
     createdAt: now.toISOString(),
@@ -445,7 +502,11 @@ export async function createArticle(input: CreatePostInput): Promise<Article> {
   return article;
 }
 
-export async function updateArticle(
+export function updateArticle(id: string, input: UpdatePostInput): Promise<Article | null> {
+  return withArticleWriteLock(() => updateArticleUnlocked(id, input));
+}
+
+async function updateArticleUnlocked(
   id: string,
   input: UpdatePostInput,
 ): Promise<Article | null> {
@@ -456,6 +517,21 @@ export async function updateArticle(
   if (index === -1) return null;
 
   const existing = articles[index];
+
+  // Validate before mutating: `existing` is the cached object.
+  if (input.title !== undefined || input.content !== undefined) {
+    const sanitizedContent =
+      input.content !== undefined
+        ? sanitizeHtml(input.content.trim())
+        : existing.content.join("\n");
+    assertNotDuplicate(articles, input.title ?? existing.title, sanitizedContent, id);
+
+    // Status-only changes (admin approve/reject) skip this so older posts can still be moderated.
+    const nextStatus = input.status ?? existing.status;
+    if (input.content !== undefined && nextStatus !== "draft" && !hasInternalLink(sanitizedContent)) {
+      throw new Error(INTERNAL_LINK_REQUIRED);
+    }
+  }
 
   if (input.title !== undefined) {
     existing.title = input.title.trim();
@@ -506,6 +582,10 @@ export async function updateArticle(
       input.metaDescription.trim() || existing.excerpt;
   }
 
+  if (input.faqs !== undefined) {
+    existing.faqs = input.faqs;
+  }
+
   if (input.status !== undefined) {
     existing.status = input.status;
     existing.publishedAt = resolvePublishDate(
@@ -542,7 +622,11 @@ export async function updateArticle(
   return existing;
 }
 
-export async function deleteArticle(id: string): Promise<boolean> {
+export function deleteArticle(id: string): Promise<boolean> {
+  return withArticleWriteLock(() => deleteArticleUnlocked(id));
+}
+
+async function deleteArticleUnlocked(id: string): Promise<boolean> {
   invalidateArticlesMemoryCache();
   const articles = await fetchArticlesRaw();
   const filtered = articles.filter((article) => article.id !== id);

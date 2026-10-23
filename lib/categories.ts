@@ -22,10 +22,13 @@ export async function getCategories(): Promise<BlogCategory[]> {
     defaultCategories(),
   );
 
-  if (categories.length === 0) {
-    const seeded = defaultCategories();
-    await writeJson(CATEGORIES_FILE, seeded);
-    return seeded;
+  // Store any built-in category the database doesn't have yet (e.g. ones added to
+  // articleCategories later), so post forms can pick it.
+  const existingSlugs = new Set(categories.map((category) => category.slug));
+  const missing = defaultCategories().filter((category) => !existingSlugs.has(category.slug));
+  if (missing.length > 0) {
+    categories.push(...missing);
+    await writeJson(CATEGORIES_FILE, categories);
   }
 
   return categories.sort((a, b) => a.name.localeCompare(b.name));

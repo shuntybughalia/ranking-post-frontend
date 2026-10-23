@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { createArticle, getAllArticles } from "@/lib/articles";
 import { getCategories } from "@/lib/categories";
-import { validateImage } from "@/lib/post-validation";
+import { parseFaqsInput, validateImage } from "@/lib/post-validation";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
 import { withApiErrors } from "@/lib/api-handler";
 
@@ -21,7 +21,7 @@ async function handlePOST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, excerpt, content, category, categoryId, image, featured } =
+    const { title, excerpt, content, category, categoryId, image, featured, faqs } =
       body;
 
     if (!title?.trim() || !excerpt?.trim() || !content?.trim()) {
@@ -55,6 +55,7 @@ async function handlePOST(request: Request) {
       content,
       categoryId: resolvedCategoryId,
       image: imageValue,
+      faqs: parseFaqsInput(faqs),
       author: session.name,
       authorId: session.id,
       status: "published",
