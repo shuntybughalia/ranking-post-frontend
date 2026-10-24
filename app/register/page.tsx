@@ -3,17 +3,24 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import GenderPicker from "@/app/components/ui/GenderPicker";
 import { apiFetch, getErrorMessage } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
+import type { Gender } from "@/lib/types";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gender, setGender] = useState<Gender>();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    if (!gender) {
+      setError("Please choose male or female for your avatar.");
+      return;
+    }
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
@@ -24,7 +31,7 @@ export default function RegisterPage() {
     try {
       await apiFetch("/api/auth/register", {
         method: "POST",
-        json: { name, email, password },
+        json: { name, email, password, gender },
       });
       showToast("Welcome! Your account has been created.", "success");
       router.push("/");
@@ -64,6 +71,11 @@ export default function RegisterPage() {
                   placeholder="John Doe"
                   className="w-full rounded-lg border border-border px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/30"
                 />
+              </div>
+
+              <div>
+                <p className="mb-1.5 block text-sm font-medium text-navy">Gender</p>
+                <GenderPicker value={gender} onChange={setGender} />
               </div>
 
               <div>

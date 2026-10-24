@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSession, getSession } from "@/lib/auth";
+import { MAX_BIO_CHARS, validateAvatarUrl } from "@/lib/profile";
+import { parseGender } from "@/lib/session";
 import { updateUserProfile } from "@/lib/users";
 import { withApiErrors } from "@/lib/api-handler";
 
@@ -39,9 +41,26 @@ async function handlePATCH(request: Request) {
       }
     }
 
+    const bio = typeof body.bio === "string" ? body.bio.trim() : undefined;
+    if (bio && bio.length > MAX_BIO_CHARS) {
+      return NextResponse.json(
+        { error: `Bio must be ${MAX_BIO_CHARS} characters or fewer.` },
+        { status: 400 },
+      );
+    }
+
+    const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl.trim() : undefined;
+    const avatarError = avatarUrl !== undefined ? validateAvatarUrl(avatarUrl) : null;
+    if (avatarError) {
+      return NextResponse.json({ error: avatarError }, { status: 400 });
+    }
+
     const updated = await updateUserProfile(session.id, {
       name: name?.trim() || undefined,
       password: newPassword || undefined,
+      gender: parseGender(body.gender),
+      bio,
+      avatarUrl,
     });
 
     if (!updated) {

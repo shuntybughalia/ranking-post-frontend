@@ -88,12 +88,22 @@ export interface BlogTag {
 
 export type UserRole = "user" | "admin" | "super_admin";
 
+/** Picks the male or female avatar icon; unset shows a neutral person. */
+export type Gender = "male" | "female";
+
+export const GENDERS: Gender[] = ["male", "female"];
+
 export interface User {
   id: string;
   name: string;
   email: string;
   passwordHash: string;
   role?: UserRole;
+  gender?: Gender;
+  /** Short plain-text bio; URLs in it are shown as links. */
+  bio?: string;
+  /** Uploaded profile photo; replaces the gender icon when set. */
+  avatarUrl?: string;
   createdAt: string;
 }
 
@@ -102,6 +112,18 @@ export interface SessionUser {
   name: string;
   email: string;
   role: UserRole;
+  gender?: Gender;
+  avatarUrl?: string;
+}
+
+/** A review outcome on one of the user's own posts, shown under the header bell. */
+export interface PostNotification {
+  id: string;
+  title: string;
+  slug: string;
+  status: PostStatus;
+  rejectionReason?: string;
+  at: string;
 }
 
 export interface PublicUser {

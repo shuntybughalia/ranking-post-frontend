@@ -3,7 +3,7 @@ import { cache } from "react";
 import bcrypt from "bcryptjs";
 import { normalizeRole } from "./permissions";
 import { readJson, writeJson } from "./db";
-import type { PublicUser, SessionUser, User, UserRole } from "./types";
+import type { Gender, PublicUser, SessionUser, User, UserRole } from "./types";
 
 const USERS_FILE = "users.json";
 
@@ -23,6 +23,8 @@ function toSessionUser(user: User): SessionUser {
     name: user.name,
     email: user.email,
     role: normalizeRole(user.role),
+    gender: user.gender,
+    avatarUrl: user.avatarUrl,
   };
 }
 
@@ -89,6 +91,7 @@ export async function createUser(
   name: string,
   email: string,
   password: string,
+  gender?: Gender,
 ): Promise<SessionUser> {
   await ensureSuperAdmin();
 
@@ -104,6 +107,7 @@ export async function createUser(
     email: email.trim().toLowerCase(),
     passwordHash: await bcrypt.hash(password, 10),
     role: "user",
+    gender,
     createdAt: new Date().toISOString(),
   };
 
@@ -135,7 +139,8 @@ export async function getUserById(id: string): Promise<User | undefined> {
 
 export async function updateUserProfile(
   id: string,
-  updates: { name?: string; password?: string },
+  /** For `bio` and `avatarUrl`, an empty string clears the field. */
+  updates: { name?: string; password?: string; gender?: Gender; bio?: string; avatarUrl?: string },
 ): Promise<SessionUser | null> {
   const users = await getUsers();
   const index = users.findIndex((user) => user.id === id);
@@ -148,6 +153,18 @@ export async function updateUserProfile(
 
   if (updates.password !== undefined) {
     users[index].passwordHash = await bcrypt.hash(updates.password, 10);
+  }
+
+  if (updates.gender !== undefined) {
+    users[index].gender = updates.gender;
+  }
+
+  if (updates.bio !== undefined) {
+    users[index].bio = updates.bio || undefined;
+  }
+
+  if (updates.avatarUrl !== undefined) {
+    users[index].avatarUrl = updates.avatarUrl || undefined;
   }
 
   await writeJson(USERS_FILE, users);

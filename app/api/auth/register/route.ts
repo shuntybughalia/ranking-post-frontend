@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
+import { parseGender } from "@/lib/session";
 import { createUser } from "@/lib/users";
 import { withApiErrors } from "@/lib/api-handler";
 
@@ -22,7 +23,7 @@ async function handlePOST(request: Request) {
       );
     }
 
-    const user = await createUser(name, email, password);
+    const user = await createUser(name, email, password, parseGender(body.gender));
     await createSession(user);
 
     return NextResponse.json({ user });

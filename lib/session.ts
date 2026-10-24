@@ -1,6 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 import { normalizeRole } from "./permissions";
-import type { SessionUser, UserRole } from "./types";
+import { GENDERS, type Gender, type SessionUser, type UserRole } from "./types";
+
+/** Returns a valid gender, or undefined for anything else (missing, old tokens, bad input). */
+export function parseGender(value: unknown): Gender | undefined {
+  return GENDERS.includes(value as Gender) ? (value as Gender) : undefined;
+}
 
 export const COOKIE_NAME = "rankingpost_session";
 
@@ -14,6 +19,8 @@ export async function signSessionToken(user: SessionUser): Promise<string> {
     name: user.name,
     email: user.email,
     role: user.role,
+    gender: user.gender,
+    avatarUrl: user.avatarUrl,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -31,6 +38,8 @@ export async function verifySessionToken(
       name: payload.name as string,
       email: payload.email as string,
       role: normalizeRole(payload.role as UserRole | undefined),
+      gender: parseGender(payload.gender),
+      avatarUrl: typeof payload.avatarUrl === "string" ? payload.avatarUrl : undefined,
     };
   } catch {
     return null;
