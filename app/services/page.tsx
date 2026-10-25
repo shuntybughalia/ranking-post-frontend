@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { siteContainer } from "@/app/components/layout/siteContainer";
+import ReviewsSection from "@/app/components/ui/ReviewsSection";
+import { seoServiceReviews } from "@/app/data/reviews";
 import { servicePackages, type ServicePackage } from "@/app/data/services";
 
 const CONTACT_EMAIL = "monietcriss@gmail.com";
@@ -150,6 +152,12 @@ export default function ServicesPage() {
             ))}
           </div>
         </section>
+
+        <ReviewsSection
+          title="What Our SEO Clients Say"
+          subtitle="Results and feedback from businesses using our SEO packages."
+          reviews={seoServiceReviews}
+        />
 
         <section className="rounded-2xl bg-cream px-6 py-10 text-center md:px-12">
           <h2 className="text-2xl font-bold text-navy">Need a custom plan?</h2>

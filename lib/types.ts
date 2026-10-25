@@ -116,6 +116,31 @@ export interface SessionUser {
   avatarUrl?: string;
 }
 
+/** A reader's comment on a published post; name and avatar are captured when it's posted. */
+export interface PostComment {
+  id: string;
+  articleId: string;
+  userId: string;
+  name: string;
+  gender?: Gender;
+  avatarUrl?: string;
+  body: string;
+  createdAt: string;
+}
+
+/** A guest author's review of RANKINGPOST, shown on the homepage. One per user. */
+export interface SiteReview {
+  id: string;
+  userId: string;
+  name: string;
+  gender?: Gender;
+  avatarUrl?: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** A review outcome on one of the user's own posts, shown under the header bell. */
 export interface PostNotification {
   id: string;

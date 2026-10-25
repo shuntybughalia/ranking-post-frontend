@@ -2,16 +2,20 @@ import type { FaqItem } from "@/lib/types";
 
 interface FaqAccordionProps {
   faqs: FaqItem[];
+  title?: string;
 }
 
-/** Post FAQ list. Native <details> keeps answers in the HTML for crawlers and needs no JS. */
-export default function FaqAccordion({ faqs }: FaqAccordionProps) {
+/** FAQ list. Native <details> keeps answers in the HTML for crawlers and needs no JS. */
+export default function FaqAccordion({
+  faqs,
+  title = "Frequently Asked Questions",
+}: FaqAccordionProps) {
   if (faqs.length === 0) return null;
 
   return (
     <section aria-labelledby="faq-heading" className="mt-12">
       <h2 id="faq-heading" className="mb-5 text-2xl font-bold text-[#3a3a3a] md:text-[28px]">
-        Frequently Asked Questions
+        {title}
       </h2>
       <div className="divide-y divide-border rounded-md border border-border">
         {faqs.map((faq, index) => (

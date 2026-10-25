@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ArticleCard from "@/app/components/blog/ArticleCard";
 import ArticleContent from "@/app/components/blog/ArticleContent";
 import BlogPostJsonLd from "@/app/components/blog/BlogPostJsonLd";
+import CommentsSection from "@/app/components/blog/CommentsSection";
 import FaqAccordion from "@/app/components/blog/FaqAccordion";
 import ArticleViewTracker from "@/app/components/blog/ArticleViewTracker";
 import PostImage from "@/app/components/blog/PostImage";
@@ -189,6 +190,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               )}
             </nav>
           )}
+
+          <CommentsSection articleId={article.id} slug={slug} />
         </article>
 
         <PostSidebar articles={articles} currentSlug={slug} />
