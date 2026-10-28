@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getArticlesByAuthorId } from "@/lib/articles";
+import { getArticleSummariesByAuthorId } from "@/lib/articles";
 import { requireSession } from "@/lib/post-auth";
 import { withApiErrors } from "@/lib/api-handler";
 import type { PostNotification } from "@/lib/types";
@@ -14,7 +14,7 @@ async function handleGET() {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const articles = await getArticlesByAuthorId(session.id);
+  const articles = await getArticleSummariesByAuthorId(session.id);
   const notifications: PostNotification[] = articles
     .filter((article) => article.status !== "draft")
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import PostImage from "@/app/components/blog/PostImage";
-import { getArticlesByAuthorId } from "@/lib/articles";
+import { getArticleSummariesByAuthorId } from "@/lib/articles";
 import { getSession } from "@/lib/auth";
 import BioText from "@/app/components/ui/BioText";
 import UserAvatar from "@/app/components/ui/UserAvatar";
@@ -10,7 +10,7 @@ import { getUserById } from "@/lib/users";
 import type { Article, PostStatus, UserRole } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "Your Profile — RANKINGPOST",
+  title: "Your Profile",
   robots: { index: false },
 };
 
@@ -84,7 +84,7 @@ export default async function ProfilePage() {
   const session = await getSession();
   if (!session) redirect("/login?redirect=/profile");
 
-  const [user, articles] = await Promise.all([getUserById(session.id), getArticlesByAuthorId(session.id)]);
+  const [user, articles] = await Promise.all([getUserById(session.id), getArticleSummariesByAuthorId(session.id)]);
   const name = user?.name ?? session.name;
   const role = user?.role ?? session.role;
 

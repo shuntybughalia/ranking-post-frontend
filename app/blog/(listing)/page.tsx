@@ -10,7 +10,7 @@ import { firstParam, type SearchParams } from "@/lib/search-params";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Blog — RANKINGPOST",
+  title: "Blog",
   description:
     "Expert SEO insights, link building strategies, and content marketing guides.",
   alternates: {

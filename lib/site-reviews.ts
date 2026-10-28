@@ -1,5 +1,5 @@
 import "server-only";
-import { getArticlesByAuthorId } from "./articles";
+import { getArticleSummariesByAuthorId } from "./articles";
 import { readJson, writeJson } from "./db";
 import { canAccessAdmin } from "./permissions";
 import type { SessionUser, SiteReview } from "./types";
@@ -18,7 +18,7 @@ export async function getSiteReviews(): Promise<SiteReview[]> {
 
 /** Only people who have actually published a guest post can review the service. */
 export async function canReviewSite(user: SessionUser): Promise<boolean> {
-  const posts = await getArticlesByAuthorId(user.id);
+  const posts = await getArticleSummariesByAuthorId(user.id);
   return posts.some((post) => post.status === "published");
 }
 

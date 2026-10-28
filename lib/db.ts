@@ -168,6 +168,64 @@ async function writeJsonMongo<T>(filename: string, data: T): Promise<void> {
   );
 }
 
+/**
+ * Reads an array store without some heavy fields (e.g. article bodies), so
+ * listing pages don't download every post's full content.
+ */
+export async function readJsonWithout<T extends object>(
+  filename: string,
+  omitFields: string[],
+): Promise<T[]> {
+  const backend = await resolveStorageBackend();
+
+  if (backend === "mongo") {
+    const db = await getDb();
+    const stored = await db.collection(collectionName(filename)).findOne(
+      { [STORE_KEY]: filename },
+      { projection: Object.fromEntries(omitFields.map((field) => [`data.${field}`, 0])) },
+    );
+    if (Array.isArray(stored?.data)) {
+      return dedupeById(stored.data as Array<T & { id?: string }>);
+    }
+    // Legacy layout (one document per item): fall back to the full read.
+    return readJsonMongo<T[]>(filename, []);
+  }
+
+  const items = await readJsonFile<T[]>(filename, []);
+  return items.map((item) => {
+    const copy = { ...item } as Record<string, unknown>;
+    for (const field of omitFields) delete copy[field];
+    return copy as T;
+  });
+}
+
+/** Reads the single array item whose `field` equals `value`, without loading the rest. */
+export async function readJsonItem<T extends object>(
+  filename: string,
+  field: string,
+  value: string,
+): Promise<T | undefined> {
+  const backend = await resolveStorageBackend();
+
+  if (backend === "mongo") {
+    const db = await getDb();
+    const stored = await db.collection(collectionName(filename)).findOne(
+      { [STORE_KEY]: filename },
+      { projection: { data: { $elemMatch: { [field]: value } } } },
+    );
+    // No store document yet (legacy one-document-per-item layout): fall back to the full read.
+    // A store document with no `data` just means nothing matched.
+    if (!stored) {
+      const items = await readJsonMongo<T[]>(filename, []);
+      return items.find((item) => (item as Record<string, unknown>)[field] === value);
+    }
+    return (stored?.data as T[] | undefined)?.[0];
+  }
+
+  const items = await readJsonFile<T[]>(filename, []);
+  return items.find((item) => (item as Record<string, unknown>)[field] === value);
+}
+
 export async function readJson<T>(filename: string, fallback: T): Promise<T> {
   const backend = await resolveStorageBackend();
   return backend === "mongo"

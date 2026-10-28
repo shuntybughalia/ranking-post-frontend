@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import PostForm from "@/app/components/posts/PostForm";
 import { getSession } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: "Submit a Guest Post",
+  robots: { index: false },
+};
 
 export const dynamic = "force-dynamic";
 

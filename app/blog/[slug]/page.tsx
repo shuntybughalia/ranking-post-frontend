@@ -44,7 +44,8 @@ export async function generateMetadata({
   const image = article.image.startsWith("data:") ? undefined : article.image;
 
   return {
-    title,
+    // Authors write their own meta title; don't append the site name to it.
+    title: { absolute: title },
     description,
     alternates: {
       canonical: url,
@@ -54,6 +55,7 @@ export async function generateMetadata({
       description,
       url,
       type: "article",
+      siteName: "RANKINGPOST",
       publishedTime: article.publishedAt ?? article.createdAt,
       modifiedTime: article.updatedAt,
       authors: [article.author],

@@ -5,7 +5,8 @@ import { articleCategories } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Stats — RANKINGPOST",
+  title: "Stats",
+  alternates: { canonical: "/stats" },
   description: "Platform statistics and content analytics for RANKINGPOST.",
 };
 

@@ -9,7 +9,8 @@ import { servicePackages, type ServicePackage } from "@/app/data/services";
 const CONTACT_EMAIL = "monietcriss@gmail.com";
 
 export const metadata: Metadata = {
-  title: "SEO Services — RANKINGPOST",
+  title: "SEO Services: On-Page, Off-Page & AI SEO Packages",
+  alternates: { canonical: "/services" },
   description:
     "Complete SEO packages, from Basic to Premium, covering on-page SEO, off-page SEO and AI SEO.",
 };

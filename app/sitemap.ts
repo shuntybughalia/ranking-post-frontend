@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getArticles } from "@/lib/articles";
+import { getArticlesForListing } from "@/lib/articles";
 import { getSiteUrl } from "@/lib/site-url";
 
 /** Generated at request time so the build does not require MongoDB. */
@@ -11,7 +11,7 @@ async function getPublishedArticlesForSitemap() {
   }
 
   try {
-    return await getArticles();
+    return await getArticlesForListing();
   } catch (error) {
     console.warn(
       "Sitemap: skipping blog posts (articles unavailable):",

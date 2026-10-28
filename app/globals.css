@@ -66,11 +66,100 @@
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
+
+  /* Instant tap feedback: no double-tap-zoom delay and no grey flash on mobile. */
+  a,
+  button,
+  summary,
+  [role="button"],
+  label[for] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  [role="button"] {
+    transition-property: transform, opacity, background-color, border-color, color, box-shadow;
+    transition-duration: 120ms;
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.96);
+  }
+
+  a[href]:active {
+    opacity: 0.7;
+  }
 }
 
 /* Tailwind's cursor-pointer utility would show the system hand instead of the brand cursor. */
 .cursor-pointer {
   cursor: var(--cursor-pointer);
+}
+
+/* FAQ accordion: animate the answer's height where supported (Chrome/Edge 131+);
+   other browsers simply open instantly. */
+.faq-item {
+  interpolate-size: allow-keywords;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.faq-item:hover {
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+}
+
+.faq-item[open] {
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px -4px rgb(11 11 11 / 0.15);
+}
+
+.faq-icon {
+  transition:
+    transform 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.faq-item[open] .faq-icon {
+  transform: rotate(45deg);
+  background-color: var(--gold);
+  color: var(--ink);
+}
+
+.faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 250ms ease,
+    content-visibility 250ms allow-discrete;
+}
+
+.faq-item[open]::details-content {
+  block-size: auto;
+}
+
+.faq-item[open] .faq-answer {
+  animation: faq-answer-in 250ms ease-out;
+}
+
+@keyframes faq-answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-item::details-content {
+    transition: none;
+  }
+
+  .faq-item[open] .faq-answer {
+    animation: none;
+  }
 }
 
 body {

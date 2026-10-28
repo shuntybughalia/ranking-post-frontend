@@ -3,7 +3,13 @@ import { cache } from "react";
 import { categoryNameToEnum, getCategoryById } from "./categories";
 import { PUBLIC_PAGE_REVALIDATE } from "./cache-config";
 import { parseArticleContent, stripHtml } from "./content";
-import { incrementItemField, readJson, writeJson } from "./db";
+import {
+  incrementItemField,
+  readJson,
+  readJsonItem,
+  readJsonWithout,
+  writeJson,
+} from "./db";
 import {
   DEFAULT_IMAGE,
   compactArticleImage,
@@ -50,12 +56,29 @@ let lastKnownArticles: Article[] | null = null;
 // Bumped on every invalidation so a refresh that started before a write can't restore pre-write data.
 let articlesGeneration = 0;
 
+// Every article without its body content. The full store is several MB, so
+// listing pages, the sitemap and dashboards read this much smaller copy.
+let summariesMemoryCache: { articles: Article[]; expiresAt: number } | null = null;
+let summariesInflight: Promise<Article[]> | null = null;
+let lastKnownSummaries: Article[] | null = null;
+
 function invalidateArticlesMemoryCache() {
   articlesMemoryCache = null;
   listingMemoryCache = null;
   lastKnownArticles = null;
   articlesInflight = null;
+  summariesMemoryCache = null;
+  summariesInflight = null;
+  lastKnownSummaries = null;
   articlesGeneration += 1;
+}
+
+/** The full articles if they're already in memory, so lookups needn't hit the database. */
+function fullArticlesInMemory(): Article[] | null {
+  if (articlesMemoryCache && articlesMemoryCache.expiresAt > Date.now()) {
+    return articlesMemoryCache.articles;
+  }
+  return lastKnownArticles;
 }
 
 function estimateReadTime(content: string[]): string {
@@ -74,6 +97,9 @@ function resolveFeaturedImage(raw: LegacyArticle): string {
   const image = compactArticleImage(raw.image);
   if (image !== DEFAULT_IMAGE) return image;
 
+  // Summary reads omit content, so there's nothing to fall back to.
+  if (!raw.content) return image;
+
   const match = raw.content.join(" ").match(/<img[^>]+src="(https:\/\/[^"]+)"/i);
   const candidate = match?.[1].replace(/&amp;/g, "&");
   return candidate && candidate.length <= 2048 && !candidate.startsWith(DEFAULT_IMAGE.split("?")[0])
@@ -90,7 +116,7 @@ function normalizeArticle(raw: LegacyArticle): Article {
     slug: raw.slug,
     title: raw.title,
     excerpt: raw.excerpt,
-    content: raw.content,
+    content: raw.content ?? [],
     category: raw.category,
     categoryId,
     readTime: raw.readTime,
@@ -173,6 +199,70 @@ async function loadArticlesForRead(): Promise<Article[]> {
 
 const getArticlesRaw = cache(loadArticlesForRead);
 
+async function fetchSummariesRaw(): Promise<Article[]> {
+  if (summariesMemoryCache && summariesMemoryCache.expiresAt > Date.now()) {
+    return summariesMemoryCache.articles;
+  }
+
+  // Derive from the full articles when they're already loaded.
+  const full = fullArticlesInMemory();
+  if (full) return full.map(omitArticleContent);
+
+  if (summariesInflight) return summariesInflight;
+
+  const generation = articlesGeneration;
+  const inflight = (async () => {
+    const raw = await readJsonWithout<LegacyArticle>(ARTICLES_FILE, ["content"]);
+    const summaries = dedupeArticles(raw.map(normalizeArticle));
+
+    if (generation === articlesGeneration) {
+      summariesMemoryCache = {
+        articles: summaries,
+        expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
+      };
+      lastKnownSummaries = summaries;
+    }
+    return summaries;
+  })().finally(() => {
+    if (summariesInflight === inflight) summariesInflight = null;
+  });
+
+  summariesInflight = inflight;
+  return inflight;
+}
+
+/** Like loadArticlesForRead, but for the content-free summaries. */
+async function loadSummariesForRead(): Promise<Article[]> {
+  if (summariesMemoryCache && summariesMemoryCache.expiresAt > Date.now()) {
+    return summariesMemoryCache.articles;
+  }
+
+  if (lastKnownSummaries) {
+    fetchSummariesRaw().catch((error) => {
+      console.warn(
+        "Article summary refresh failed, serving cached copy:",
+        error instanceof Error ? error.message : error,
+      );
+    });
+    return lastKnownSummaries;
+  }
+
+  return fetchSummariesRaw();
+}
+
+const getArticleSummaries = cache(loadSummariesForRead);
+
+/** One article by a field, from memory when possible, otherwise just that item from storage. */
+async function findArticle(field: "id" | "slug", value: string): Promise<Article | undefined> {
+  const full = fullArticlesInMemory();
+  if (full) return full.find((article) => article[field] === value);
+
+  const raw = await readJsonItem<LegacyArticle>(ARTICLES_FILE, field, value);
+  return raw ? normalizeArticle(raw) : undefined;
+}
+
+const findArticleCached = cache(findArticle);
+
 function dedupeArticles(articles: Article[]): Article[] {
   const byId = new Map<string, Article>();
 
@@ -243,7 +333,10 @@ export async function getArticlesForListing(): Promise<Article[]> {
     return listingMemoryCache.articles;
   }
 
-  const articles = (await getArticles()).map(toListingArticle);
+  const summaries = await getArticleSummaries();
+  const articles = sortByNewest(summaries.filter((a) => a.status === "published")).map(
+    toListingArticle,
+  );
   listingMemoryCache = {
     articles,
     expiresAt: Date.now() + ARTICLES_MEMORY_CACHE_TTL_MS,
@@ -293,18 +386,27 @@ export async function getPendingArticles(): Promise<Article[]> {
   return sortByNewest(articles.filter((a) => a.status === "pending"));
 }
 
+/** Every post (any status) without body content, newest first — for counts and dashboards. */
+export async function getAllArticleSummaries(): Promise<Article[]> {
+  return sortByNewest(await getArticleSummaries());
+}
+
+/** An author's posts without body content — for lists, counts and notifications. */
+export async function getArticleSummariesByAuthorId(authorId: string): Promise<Article[]> {
+  const articles = await getArticleSummaries();
+  return sortByNewest(articles.filter((a) => a.authorId === authorId));
+}
+
 export async function getArticleById(
   id: string,
 ): Promise<Article | undefined> {
-  const articles = await getArticlesRaw();
-  return articles.find((article) => article.id === id);
+  return findArticleCached("id", id);
 }
 
 export async function getArticleBySlug(
   slug: string,
 ): Promise<Article | undefined> {
-  const articles = await getArticlesRaw();
-  const article = articles.find((item) => item.slug === slug);
+  const article = await findArticleCached("slug", slug);
   if (!article || article.status !== "published") return undefined;
   return article;
 }
@@ -313,7 +415,7 @@ export async function getAdjacentArticles(slug: string): Promise<{
   previous: Article | null;
   next: Article | null;
 }> {
-  const articles = await getArticles();
+  const articles = await getArticlesForListing();
   const index = articles.findIndex((article) => article.slug === slug);
 
   if (index === -1) {
@@ -329,15 +431,17 @@ export async function getAdjacentArticles(slug: string): Promise<{
 export async function incrementArticleViews(id: string): Promise<void> {
   await incrementItemField(ARTICLES_FILE, id, "views");
 
-  // Keep the warm cache in sync instead of forcing a full reload from storage.
+  // Keep the warm caches in sync instead of forcing a full reload from storage.
   const cached = articlesMemoryCache?.articles.find((article) => article.id === id);
   if (cached) cached.views += 1;
+  const summary = summariesMemoryCache?.articles.find((article) => article.id === id);
+  if (summary) summary.views += 1;
 }
 
 export async function getPostStats(authorId?: string): Promise<PostStats> {
   const articles = authorId
-    ? await getArticlesByAuthorId(authorId)
-    : await getArticlesRaw();
+    ? await getArticleSummariesByAuthorId(authorId)
+    : await getArticleSummaries();
 
   return {
     total: articles.length,

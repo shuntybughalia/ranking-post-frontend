@@ -6,7 +6,7 @@ import { getUserById } from "@/lib/users";
 import SettingsForms from "./SettingsForms";
 
 export const metadata: Metadata = {
-  title: "Settings — RANKINGPOST",
+  title: "Settings",
   robots: { index: false },
 };
 

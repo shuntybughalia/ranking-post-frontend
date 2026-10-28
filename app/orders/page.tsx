@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import OrdersList from "./OrdersList";
 
 export const metadata: Metadata = {
-  title: "Orders — RANKINGPOST",
+  title: "Orders",
   description: "View and manage your guest posting orders.",
+  robots: { index: false },
 };
 
 export default function OrdersPage() {

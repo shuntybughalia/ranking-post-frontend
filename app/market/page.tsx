@@ -5,7 +5,8 @@ import MarketGrid from "./MarketGrid";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Market — RANKINGPOST",
+  title: "Guest Post Marketplace",
+  alternates: { canonical: "/market" },
   description:
     "Browse guest posting packages and link building services for your SEO strategy.",
 };

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getArticlesByAuthorId, getPostStats } from "@/lib/articles";
+import { getArticleSummariesByAuthorId, getPostStats } from "@/lib/articles";
 import { getSession } from "@/lib/auth";
 import MyPostsPageClient from "./MyPostsPageClient";
+
+export const metadata: Metadata = {
+  title: "My Posts",
+  robots: { index: false },
+};
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +19,7 @@ export default async function MyPostsPage() {
   }
 
   const [articles, stats] = await Promise.all([
-    getArticlesByAuthorId(session.id),
+    getArticleSummariesByAuthorId(session.id),
     getPostStats(session.id),
   ]);
 
