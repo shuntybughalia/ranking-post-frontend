@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/post-auth";
 import {
   canReviewSite,
+  canReviewSiteNow,
   getSiteReviews,
   upsertSiteReview,
   validateReviewInput,
@@ -12,7 +13,8 @@ import { withApiErrors } from "@/lib/api-handler";
 async function handleGET() {
   const [reviews, session] = await Promise.all([getSiteReviews(), requireSession()]);
   const canReview = session ? await canReviewSite(session) : false;
-  return NextResponse.json({ reviews, canReview });
+  const hasReviewed = session ? reviews.some((review) => review.userId === session.id) : false;
+  return NextResponse.json({ reviews, canReview, hasReviewed });
 }
 
 async function handlePOST(request: Request) {
@@ -21,7 +23,7 @@ async function handlePOST(request: Request) {
     return NextResponse.json({ error: "Please sign in to leave a review." }, { status: 401 });
   }
 
-  if (!(await canReviewSite(session))) {
+  if (!(await canReviewSiteNow(session))) {
     return NextResponse.json(
       { error: "Publish a guest post first, then come back to review your experience." },
       { status: 403 },

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { contentToEditorHtml, stripHtml } from "@/lib/content";
 import { isValidSlug, slugify } from "@/lib/slug";
 import type { Article, BlogCategory, FaqItem, PostStatus } from "@/lib/types";
@@ -12,6 +12,7 @@ import { INTERNAL_LINK_REQUIRED, hasInternalLink } from "@/lib/internal-links";
 import { showToast } from "@/lib/toast";
 import FaqEditor from "./FaqEditor";
 import ImageUploadButton from "./ImageUploadButton";
+import PublishThankYou from "./PublishThankYou";
 
 const AUTOSAVE_KEY_PREFIX = "rankingpost-draft-";
 
@@ -49,6 +50,7 @@ export default function PostForm({
   const router = useRouter();
   const autosaveTimer = useRef<number | null>(null);
   const submittingRef = useRef(false);
+  const [publishedPost, setPublishedPost] = useState<{ title: string; slug: string } | null>(null);
 
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -232,10 +234,20 @@ export default function PostForm({
         mode === "create" ? "/api/posts" : `/api/posts/${article!.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
 
-      await apiFetch(url, { method, json: payload });
+      const { article: saved } = await apiFetch<{ article: Article }>(url, {
+        method,
+        json: payload,
+      });
 
       if (mode === "create") {
+        // The form stays mounted behind the thank-you dialog, so stop a queued autosave too.
+        if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
         localStorage.removeItem(autosaveKey);
+      }
+
+      if (nextStatus === "published" && article?.status !== "published") {
+        setPublishedPost({ title: saved.title, slug: saved.slug });
+        return;
       }
 
       showToast(
@@ -257,8 +269,18 @@ export default function PostForm({
     void submitPost("published");
   }
 
+  const leaveAfterPublish = useCallback(() => router.push(redirectTo), [router, redirectTo]);
+
   return (
     <>
+      {publishedPost && (
+        <PublishThankYou
+          title={publishedPost.title}
+          slug={publishedPost.slug}
+          onClose={leaveAfterPublish}
+        />
+      )}
+
       {error && (
         <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}

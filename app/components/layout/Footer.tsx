@@ -15,6 +15,8 @@ const footerColumns = [
     { label: "Register", href: "/register" },
   ],
   [
+    { label: "About Us", href: "/about-us" },
+    { label: "Contact Us", href: "/contact-us" },
     { label: "Sitemap", href: "/sitemap.xml" },
     { label: "Robots", href: "/robots.txt" },
   ],

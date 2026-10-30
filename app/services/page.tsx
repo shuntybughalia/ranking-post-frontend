@@ -5,15 +5,17 @@ import { siteContainer } from "@/app/components/layout/siteContainer";
 import ReviewsSection from "@/app/components/ui/ReviewsSection";
 import { seoServiceReviews } from "@/app/data/reviews";
 import { servicePackages, type ServicePackage } from "@/app/data/services";
+import { pageMetadata } from "@/lib/seo";
 
 const CONTACT_EMAIL = "monietcriss@gmail.com";
 
-export const metadata: Metadata = {
-  title: "SEO Services: On-Page, Off-Page & AI SEO Packages",
-  alternates: { canonical: "/services" },
-  description:
-    "Complete SEO packages, from Basic to Premium, covering on-page SEO, off-page SEO and AI SEO.",
-};
+const lowestPrice = Math.min(...servicePackages.map((pkg) => pkg.price));
+
+export const metadata: Metadata = pageMetadata({
+  title: "SEO Packages: On-Page, Off-Page & AI SEO | RANKINGPOST",
+  description: `SEO packages from $${lowestPrice} a month. Every plan combines on-page SEO, off-page SEO and AI SEO to grow your rankings and organic traffic.`,
+  path: "/services",
+});
 
 const pillars = [
   {

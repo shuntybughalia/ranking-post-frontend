@@ -391,6 +391,17 @@ export async function getAllArticleSummaries(): Promise<Article[]> {
   return sortByNewest(await getArticleSummaries());
 }
 
+/**
+ * Reads storage directly, so a post published moments ago counts even if this
+ * server's cached list predates it.
+ */
+export async function authorHasPublishedPost(authorId: string): Promise<boolean> {
+  const articles = await readJsonWithout<LegacyArticle>(ARTICLES_FILE, ["content"]);
+  return articles.some(
+    (article) => article.authorId === authorId && (article.status ?? "published") === "published",
+  );
+}
+
 /** An author's posts without body content — for lists, counts and notifications. */
 export async function getArticleSummariesByAuthorId(authorId: string): Promise<Article[]> {
   const articles = await getArticleSummaries();

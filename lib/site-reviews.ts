@@ -1,5 +1,5 @@
 import "server-only";
-import { getArticleSummariesByAuthorId } from "./articles";
+import { authorHasPublishedPost, getArticleSummariesByAuthorId } from "./articles";
 import { readJson, writeJson } from "./db";
 import { canAccessAdmin } from "./permissions";
 import type { SessionUser, SiteReview } from "./types";
@@ -20,6 +20,11 @@ export async function getSiteReviews(): Promise<SiteReview[]> {
 export async function canReviewSite(user: SessionUser): Promise<boolean> {
   const posts = await getArticleSummariesByAuthorId(user.id);
   return posts.some((post) => post.status === "published");
+}
+
+/** Same rule, checked against storage: used when saving, right after a first publish. */
+export async function canReviewSiteNow(user: SessionUser): Promise<boolean> {
+  return authorHasPublishedPost(user.id);
 }
 
 export function validateReviewInput(rating: unknown, body: unknown): string | null {

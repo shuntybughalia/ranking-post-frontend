@@ -7,11 +7,15 @@ import { guestPostingFaqs } from "@/app/data/home-faqs";
 import { guestPostingReviews } from "@/app/data/reviews";
 import type { Metadata } from "next";
 import { getArticleListItems } from "@/lib/articles";
+import { pageMetadata } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Guest Posting & SEO Services to Grow Traffic | RANKINGPOST",
+  description:
+    "Publish guest posts on RANKINGPOST and grow with on-page, off-page and AI SEO packages. Free to join, with SEO-friendly posts across many niches.",
+  path: "/",
+});
 
 const siteJsonLd = {
   "@context": "https://schema.org",

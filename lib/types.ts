@@ -128,6 +128,16 @@ export interface PostComment {
   createdAt: string;
 }
 
+/** A message sent through the contact page, read in the admin area. */
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+}
+
 /** A guest author's review of RANKINGPOST, shown on the homepage. One per user. */
 export interface SiteReview {
   id: string;

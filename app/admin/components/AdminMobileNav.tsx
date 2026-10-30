@@ -11,6 +11,7 @@ const navItems = [
   { label: "Orders", href: "/admin/orders" },
   { label: "Users", href: "/admin/users", superAdminOnly: true },
   { label: "Newsletter", href: "/admin/newsletter" },
+  { label: "Messages", href: "/admin/messages" },
   { label: "Settings", href: "/admin/settings" },
 ];
 
