@@ -1,4 +1,6 @@
 import HomeArticles from "@/app/components/home/HomeArticles";
+import PublishCTA from "@/app/components/home/PublishCTA";
+import TopicsSection from "@/app/components/home/TopicsSection";
 import RecentPostsCarousel from "@/app/components/home/RecentPostsCarousel";
 import NewsletterCTA from "@/app/components/home/NewsletterCTA";
 import FaqAccordion from "@/app/components/blog/FaqAccordion";
@@ -7,6 +9,7 @@ import { guestPostingFaqs } from "@/app/data/home-faqs";
 import { guestPostingReviews } from "@/app/data/reviews";
 import type { Metadata } from "next";
 import { getArticleListItems } from "@/lib/articles";
+import { firstParam, type SearchParams } from "@/lib/search-params";
 import { pageMetadata } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -55,8 +58,10 @@ const faqJsonLd = {
 // Rendered per request from the in-memory article cache so it always matches the database.
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const articles = await getArticleListItems();
+export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const [articles, params] = await Promise.all([getArticleListItems(), searchParams]);
+  const requestedPage = Number.parseInt(firstParam(params.page) ?? "", 10);
+  const page = requestedPage >= 1 ? requestedPage : 1;
 
   return (
     <>
@@ -67,7 +72,9 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
       />
       <RecentPostsCarousel articles={articles.slice(0, 5)} />
-      <HomeArticles articles={articles} />
+      <HomeArticles articles={articles} page={page} />
+      <PublishCTA articles={articles} />
+      <TopicsSection articles={articles} />
       <div className="mx-auto w-full max-w-6xl px-6">
         <FaqAccordion
           faqs={guestPostingFaqs}

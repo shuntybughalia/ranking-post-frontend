@@ -1,9 +1,25 @@
 import BlogSection from "@/app/components/home/BlogSection";
 import type { ArticleListItem } from "@/app/data/articles";
 
-const HOME_LATEST_LIMIT = 6;
+const POSTS_PER_PAGE = 10;
 
-/** Latest posts grid for the homepage; renders on the server or client. */
-export default function HomeArticles({ articles }: { articles: ArticleListItem[] }) {
-  return <BlogSection latest={articles.slice(0, HOME_LATEST_LIMIT)} />;
+interface HomeArticlesProps {
+  articles: ArticleListItem[];
+  /** Requested page; anything past the end shows the last page. */
+  page: number;
+}
+
+/** One page of the latest posts for the homepage. */
+export default function HomeArticles({ articles, page }: HomeArticlesProps) {
+  const totalPages = Math.max(1, Math.ceil(articles.length / POSTS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * POSTS_PER_PAGE;
+
+  return (
+    <BlogSection
+      latest={articles.slice(start, start + POSTS_PER_PAGE)}
+      page={currentPage}
+      totalPages={totalPages}
+    />
+  );
 }
