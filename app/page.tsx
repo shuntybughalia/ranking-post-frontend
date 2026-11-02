@@ -1,6 +1,7 @@
 import HomeArticles from "@/app/components/home/HomeArticles";
 import PublishCTA from "@/app/components/home/PublishCTA";
 import TopicsSection from "@/app/components/home/TopicsSection";
+import HowToPost from "@/app/components/home/HowToPost";
 import RecentPostsCarousel from "@/app/components/home/RecentPostsCarousel";
 import NewsletterCTA from "@/app/components/home/NewsletterCTA";
 import FaqAccordion from "@/app/components/blog/FaqAccordion";
@@ -75,6 +76,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <HomeArticles articles={articles} page={page} />
       <PublishCTA articles={articles} />
       <TopicsSection articles={articles} />
+      <HowToPost />
       <div className="mx-auto w-full max-w-6xl px-6">
         <FaqAccordion
           faqs={guestPostingFaqs}

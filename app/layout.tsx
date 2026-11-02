@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Suspense } from "react";
 import CategoryBar from "@/app/components/layout/CategoryBar";
 import Footer from "@/app/components/layout/Footer";
+import CustomCursor from "@/app/components/layout/CustomCursor";
 import Header from "@/app/components/layout/Header";
 import NavigationProgress from "@/app/components/layout/NavigationProgress";
 import { Toaster } from "@/app/components/ui/Toast";
@@ -85,6 +86,7 @@ export default function RootLayout({
         {children}
         <Footer />
         <Toaster />
+        <CustomCursor />
       </body>
     </html>
   );
