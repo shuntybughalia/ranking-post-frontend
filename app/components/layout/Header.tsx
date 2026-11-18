@@ -1,5 +1,6 @@
 "use client";
 
+import Form from "next/form";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -68,7 +69,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b-[0.8px] border-[#d5d5d5] bg-white text-[14px] leading-[21px] text-[#333]">
-      <div className={`${siteContainer} flex min-h-[64px] items-center justify-between gap-2 sm:gap-4`}>
+      <div className={`${siteContainer} flex min-h-[64px] flex-wrap items-center justify-between gap-x-2 sm:gap-x-4`}>
         <BrandLogo className="py-2" />
 
         <nav className="hidden flex-1 items-center justify-end min-[62rem]:flex">
@@ -84,6 +85,33 @@ export default function Header() {
             </Link>
           ))}
         </nav>
+
+        <Form
+          action="/blog"
+          role="search"
+          aria-label="Blog search"
+          onSubmit={() => setMobileOpen(false)}
+          className="order-last mb-3 flex w-full items-center rounded-full border border-border bg-cream/50 focus-within:border-gold-dark min-[75rem]:order-none min-[75rem]:mb-0 min-[75rem]:w-48"
+        >
+          <input
+            type="search"
+            name="q"
+            aria-label="Search blog posts"
+            placeholder="Search blogs…"
+            required
+            className="min-w-0 flex-1 rounded-l-full bg-transparent py-2 pl-4 text-base text-ink outline-none placeholder:text-muted"
+          />
+          <button
+            type="submit"
+            aria-label="Search blogs"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gold-dark hover:bg-gold/15 focus-visible:outline-2 focus-visible:outline-gold-dark"
+          >
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="m16 16 4 4" />
+            </svg>
+          </button>
+        </Form>
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
           <Link
