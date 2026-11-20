@@ -6,6 +6,7 @@ import CategoryBar from "@/app/components/layout/CategoryBar";
 import Footer from "@/app/components/layout/Footer";
 import CustomCursor from "@/app/components/layout/CustomCursor";
 import Header from "@/app/components/layout/Header";
+import SiteHelp from "@/app/components/layout/SiteHelp";
 import NavigationProgress from "@/app/components/layout/NavigationProgress";
 import { Toaster } from "@/app/components/ui/Toast";
 import { getSiteUrl } from "@/lib/site-url";
@@ -85,6 +86,7 @@ export default function RootLayout({
         </Suspense>
         {children}
         <Footer />
+        <SiteHelp />
         <Toaster />
         <CustomCursor />
       </body>

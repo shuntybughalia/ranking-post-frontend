@@ -114,7 +114,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
       <div className={`${siteContainer} grid gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12`}>
         <article className="min-w-0">
-          <h1 className="text-[32px] font-bold leading-[1.15] text-[#3a3a3a] md:text-[44px] lg:text-[52px]">
+          <h1 className="text-[32px] font-bold leading-[1.15] text-[color:var(--article-heading)] md:text-[44px] lg:text-[52px]">
             {article.title}
           </h1>
 
@@ -165,7 +165,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             ) : (
               <div />
             )}
-            <SocialShare url={postUrl} title={article.title} />
+            <SocialShare url={postUrl} />
           </div>
 
           {(adjacent.previous || adjacent.next) && (

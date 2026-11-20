@@ -122,6 +122,11 @@ export default function MyPostsDashboard({
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-medium text-navy">{article.title}</p>
+                        {article.status === "pending" && article.manualPayment && !article.manualPayment.confirmedAt && (
+                          <Link href="/contact-us" className="text-sm font-medium text-gold-dark underline">
+                            Contact us to arrange the ₹100 payment
+                          </Link>
+                        )}
                         {article.rejectionReason && (
                           <p className="mt-1 text-xs text-red-600">
                             {article.rejectionReason}

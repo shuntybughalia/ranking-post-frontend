@@ -269,3 +269,30 @@ export async function writeJson<T>(filename: string, data: T): Promise<void> {
     ? writeJsonMongo(filename, data)
     : writeJsonFile(filename, data);
 }
+
+/** Reserves the free slot across server instances, even if the post is later deleted. */
+export async function claimMonthlyPostSlot(key: string, articleId: string): Promise<boolean> {
+  if (await resolveStorageBackend() === "mongo") {
+    const db = await getDb();
+    const slots = db.collection<{ _id: string; articleId: string }>("monthly_post_slots");
+    try {
+      const slot = await slots.findOneAndUpdate(
+        { _id: key },
+        { $setOnInsert: { articleId } },
+        { upsert: true, returnDocument: "after" },
+      );
+      return slot?.articleId === articleId;
+    } catch (error) {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
+        return (await slots.findOne({ _id: key }))?.articleId === articleId;
+      }
+      throw error;
+    }
+  }
+
+  const slots = await readJsonFile<Record<string, string>>("monthly-post-slots.json", {});
+  if (slots[key]) return slots[key] === articleId;
+  slots[key] = articleId;
+  await writeJsonFile("monthly-post-slots.json", slots);
+  return true;
+}

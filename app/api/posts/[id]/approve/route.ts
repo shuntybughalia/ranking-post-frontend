@@ -8,7 +8,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-async function handlePOST(_request: Request, context: RouteContext) {
+async function handlePOST(request: Request, context: RouteContext) {
   const session = await requireAdminSession();
 
   if (!session) {
@@ -22,7 +22,17 @@ async function handlePOST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
 
-  const article = await approveArticle(id);
+  const body = await request.json().catch(() => null);
+  const confirmer = session.role === "super_admin" && body?.paymentConfirmed === true
+    ? session.id
+    : undefined;
+  if (existing.manualPayment && !existing.manualPayment.confirmedAt && !confirmer) {
+    return NextResponse.json(
+      { error: "A super admin must confirm receipt of ₹100 from Moderation." },
+      { status: 402 },
+    );
+  }
+  const article = await approveArticle(id, confirmer);
 
   if (!article) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });

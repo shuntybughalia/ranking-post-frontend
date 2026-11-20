@@ -4,6 +4,7 @@ import { categoryNameToEnum, getCategoryById } from "./categories";
 import { PUBLIC_PAGE_REVALIDATE } from "./cache-config";
 import { parseArticleContent, stripHtml } from "./content";
 import {
+  claimMonthlyPostSlot,
   incrementItemField,
   readJson,
   readJsonItem,
@@ -130,10 +131,12 @@ function normalizeArticle(raw: LegacyArticle): Article {
     metaDescription: raw.metaDescription ?? raw.excerpt,
     faqs: raw.faqs ?? [],
     status: raw.status ?? "published",
-    publishedAt: raw.publishedAt ?? createdAt,
+    publishedAt: raw.publishedAt === undefined ? createdAt : raw.publishedAt,
     createdAt,
     updatedAt: raw.updatedAt ?? createdAt,
     rejectionReason: raw.rejectionReason,
+    submissionMonth: raw.submissionMonth,
+    manualPayment: raw.manualPayment,
     views: raw.views ?? 0,
   };
 }
@@ -561,11 +564,33 @@ function assertNotDuplicate(
   }
 }
 
-export function createArticle(input: CreatePostInput): Promise<Article> {
-  return withArticleWriteLock(() => createArticleUnlocked(input));
+const indiaMonth = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+});
+
+async function applyMonthlyLimit(article: Article, articles: Article[]) {
+  const month = indiaMonth.format(new Date());
+  const previous = articles.find((post) => {
+    if (post.id === article.id || post.authorId !== article.authorId || post.manualPayment) return false;
+    if (post.submissionMonth) return post.submissionMonth === month;
+    const date = new Date(post.publishedAt ?? post.createdAt);
+    return post.status !== "draft" && Number.isFinite(date.getTime()) && indiaMonth.format(date) === month;
+  });
+  article.submissionMonth = month;
+  const free = await claimMonthlyPostSlot(
+    `${article.authorId}:${month}`,
+    previous?.id ?? article.id,
+  );
+  if (previous || !free) article.manualPayment = {};
 }
 
-async function createArticleUnlocked(input: CreatePostInput): Promise<Article> {
+export function createArticle(input: CreatePostInput, enforceMonthlyLimit = false): Promise<Article> {
+  return withArticleWriteLock(() => createArticleUnlocked(input, enforceMonthlyLimit));
+}
+
+async function createArticleUnlocked(input: CreatePostInput, enforceMonthlyLimit: boolean): Promise<Article> {
   invalidateArticlesMemoryCache();
   const articles = await fetchArticlesRaw();
   const sanitizedContent = sanitizeHtml(input.content.trim());
@@ -605,6 +630,14 @@ async function createArticleUnlocked(input: CreatePostInput): Promise<Article> {
     views: 0,
   };
 
+  if (enforceMonthlyLimit && (article.status === "published" || article.status === "pending")) {
+    await applyMonthlyLimit(article, articles);
+    if (article.manualPayment) {
+      article.status = "pending";
+      article.publishedAt = null;
+    }
+  }
+
   if (article.featured) {
     articles.forEach((item) => {
       item.featured = false;
@@ -617,13 +650,15 @@ async function createArticleUnlocked(input: CreatePostInput): Promise<Article> {
   return article;
 }
 
-export function updateArticle(id: string, input: UpdatePostInput): Promise<Article | null> {
-  return withArticleWriteLock(() => updateArticleUnlocked(id, input));
+export function updateArticle(id: string, input: UpdatePostInput, enforceMonthlyLimit = false): Promise<Article | null> {
+  return withArticleWriteLock(() => updateArticleUnlocked(id, input, enforceMonthlyLimit));
 }
 
 async function updateArticleUnlocked(
   id: string,
   input: UpdatePostInput,
+  enforceMonthlyLimit = false,
+  paymentConfirmedBy?: string,
 ): Promise<Article | null> {
   invalidateArticlesMemoryCache();
   const articles = await fetchArticlesRaw();
@@ -631,7 +666,17 @@ async function updateArticleUnlocked(
 
   if (index === -1) return null;
 
-  const existing = articles[index];
+  const existing = { ...articles[index] };
+
+  if (input.status === "published" && existing.manualPayment && !existing.manualPayment.confirmedAt) {
+    if (paymentConfirmedBy) {
+      existing.manualPayment = { confirmedAt: new Date().toISOString(), confirmedBy: paymentConfirmedBy };
+    } else if (enforceMonthlyLimit) {
+      input = { ...input, status: "pending", publishedAt: null };
+    } else {
+      throw new Error("A super admin must confirm the ₹100 payment from Moderation.");
+    }
+  }
 
   // Validate before mutating: `existing` is the cached object.
   if (input.title !== undefined || input.content !== undefined) {
@@ -730,6 +775,17 @@ async function updateArticleUnlocked(
     }
   }
 
+  if (
+    enforceMonthlyLimit && !existing.submissionMonth &&
+    (articles[index].status === "draft" || articles[index].status === "rejected") &&
+    (existing.status === "published" || existing.status === "pending")
+  ) {
+    await applyMonthlyLimit(existing, articles);
+    if (existing.manualPayment) {
+      existing.status = "pending";
+      existing.publishedAt = null;
+    }
+  }
   existing.updatedAt = new Date().toISOString();
   articles[index] = existing;
   await writeJson(ARTICLES_FILE, articles);
@@ -753,12 +809,12 @@ async function deleteArticleUnlocked(id: string): Promise<boolean> {
   return true;
 }
 
-export async function approveArticle(id: string): Promise<Article | null> {
-  return updateArticle(id, {
+export async function approveArticle(id: string, paymentConfirmedBy?: string): Promise<Article | null> {
+  return withArticleWriteLock(() => updateArticleUnlocked(id, {
     status: "published",
     publishedAt: new Date().toISOString(),
     rejectionReason: "",
-  });
+  }, false, paymentConfirmedBy));
 }
 
 export async function rejectArticle(

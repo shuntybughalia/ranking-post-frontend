@@ -30,12 +30,12 @@ export default function TopicsSection({ articles }: { articles: ArticleListItem[
   if (topics.length === 0) return null;
 
   return (
-    <section aria-labelledby="topics-heading" className="mx-auto w-full max-w-6xl px-6 pt-4 md:pt-8">
+    <section aria-labelledby="topics-heading" className="recent-posts-backdrop mx-auto w-full max-w-6xl rounded-3xl px-6 py-10 md:py-14">
       <div className="mb-8 text-center">
-        <h2 id="topics-heading" className="text-2xl font-bold text-navy md:text-4xl">
+        <h2 id="topics-heading" className="text-2xl font-bold text-white md:text-4xl">
           Explore Articles by Topic
         </h2>
-        <p className="mx-auto mt-2 max-w-2xl text-muted md:text-lg">
+        <p className="mx-auto mt-2 max-w-2xl text-slate-200 md:text-lg">
           Find guest posts in the subjects you care about.
         </p>
       </div>
@@ -49,9 +49,9 @@ export default function TopicsSection({ articles }: { articles: ArticleListItem[
           >
             <Link
               href={`/blog?category=${encodeURIComponent(topic.name)}`}
-              className="group flex h-full overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:border-gold hover:shadow-md"
+              className="group flex h-full overflow-hidden rounded-xl border border-gold/25 bg-white/5 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:border-gold hover:shadow-md"
             >
-              <span className="relative block min-h-24 w-24 shrink-0 overflow-hidden bg-cream">
+              <span className="relative block min-h-24 w-24 shrink-0 overflow-hidden bg-gold/10">
                 <PostImage
                   src={topic.latest.image}
                   alt=""
@@ -60,10 +60,10 @@ export default function TopicsSection({ articles }: { articles: ArticleListItem[
                 />
               </span>
               <span className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3">
-                <span className="font-bold leading-snug text-navy transition-colors group-hover:text-gold-dark">
+                <span className="font-bold leading-snug text-white transition-colors group-hover:text-gold-light">
                   {topic.name}
                 </span>
-                <span className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted">
+                <span className="mt-1 inline-flex items-center gap-1.5 text-sm text-gold-light">
                   {topic.count} {topic.count === 1 ? "Article" : "Articles"}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
                     <path d="M5 12h14M13 6l6 6-6 6" />
@@ -78,7 +78,7 @@ export default function TopicsSection({ articles }: { articles: ArticleListItem[
       <div className="mt-8 text-center">
         <Link
           href="/blog"
-          className="inline-block rounded-lg bg-gold/20 px-5 py-2.5 text-sm font-semibold text-gold-dark transition-colors hover:bg-gold hover:text-ink"
+          className="inline-block rounded-xl bg-linear-to-r from-gold-light to-gold px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light"
         >
           View All Articles
         </Link>

@@ -85,6 +85,9 @@ async function handlePOST(request: Request) {
 
     const parsedStatus = validatePostStatus(status) ?? "draft";
     const isAdmin = canAccessAdmin(session.role);
+    if (!isAdmin && parsedStatus === "rejected") {
+      return NextResponse.json({ error: "Invalid submission status." }, { status: 400 });
+    }
 
     const article = await createArticle({
       title,
@@ -102,7 +105,7 @@ async function handlePOST(request: Request) {
       status: parsedStatus,
       publishedAt: publishedAt ?? null,
       featured: isAdmin ? Boolean(featured) : false,
-    });
+    }, !isAdmin);
 
     revalidatePostPaths(article);
 

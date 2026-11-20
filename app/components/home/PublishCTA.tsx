@@ -32,7 +32,7 @@ export default function PublishCTA({ articles }: { articles: ArticleListItem[] }
 
         <h2
           id="publish-cta-heading"
-          className="mt-5 text-3xl font-bold leading-tight text-navy sm:text-4xl md:text-5xl lg:text-6xl"
+          className="publish-text-drop mt-5 text-3xl font-bold leading-tight text-navy sm:text-4xl md:text-5xl lg:text-6xl"
         >
           Post Your Article on{" "}
           <span className="bg-linear-to-r from-gold-dark to-[#b8860b] bg-clip-text text-transparent">
@@ -40,7 +40,7 @@ export default function PublishCTA({ articles }: { articles: ArticleListItem[] }
           </span>
         </h2>
 
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#30384e] md:text-lg">
+        <p className="publish-text-drop mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#30384e] md:text-lg">
           Reach new readers with SEO-friendly articles. Writers, businesses and
           agencies use RANKINGPOST to share their expertise on the topics they
           know best.

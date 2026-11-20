@@ -31,6 +31,8 @@ export interface FaqItem {
 }
 
 export interface Article {
+  submissionMonth?: string;
+  manualPayment?: { confirmedAt?: string; confirmedBy?: string };
   id: string;
   slug: string;
   title: string;

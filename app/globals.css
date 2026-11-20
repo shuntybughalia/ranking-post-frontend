@@ -9,6 +9,7 @@
   --gold-light: #f1c75b;
   /* Darker gold for text on light backgrounds (keeps contrast readable). */
   --gold-dark: #94680a;
+  --article-heading: #795307;
   --cream: #faf5ea;
   --navy: var(--ink);
   --navy-dark: #000000;
@@ -657,20 +658,71 @@ body {
 }
 
 /* Rendered article HTML */
+@media (prefers-reduced-motion: no-preference) {
+  .publish-text-drop {
+    animation: publish-text-drop 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  p.publish-text-drop {
+    animation-delay: 120ms;
+  }
+
+  @keyframes publish-text-drop {
+    from { opacity: 0; transform: translateY(-2rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.post-editor-fill > div,
+.post-editor-fill > div > div:has(> .prose-editor),
+.post-editor-fill .prose-editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ai-generator-sparkle {
+  text-shadow: 0 0 14px rgb(255 214 110 / 65%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ai-generator-sparkle {
+    animation: ai-generator-sparkle 1.8s ease-in-out 2;
+  }
+}
+
+@keyframes ai-generator-sparkle {
+  50% { transform: scale(1.16) rotate(10deg); }
+}
+
+.recent-posts-backdrop {
+  background-color: #060606;
+  background-image:
+    radial-gradient(ellipse at 80% 75%, rgb(184 134 11 / 24%), transparent 54%),
+    radial-gradient(ellipse at 18% 5%, rgb(212 163 43 / 12%), transparent 46%),
+    linear-gradient(120deg, #0a0a0a, #19150d);
+}
+
 .article-prose p {
   margin-bottom: 1.25rem;
   font-size: 1rem;
   line-height: 1.75;
-  color: var(--muted);
+  color: #000;
 }
+
+.article-prose p strong { color: inherit; }
 
 .article-prose h1,
 .article-prose h2,
 .article-prose h3,
-.article-prose h4 {
-  color: var(--navy);
+.article-prose h4,
+.article-prose h5,
+.article-prose h6 {
+  color: var(--article-heading);
   margin-bottom: 0.75rem;
 }
+
+.article-prose :is(h1, h2, h3, h4, h5, h6) :is(strong, a, code) { color: inherit; }
 
 .article-prose h1 {
   font-size: 2rem;
@@ -700,6 +752,16 @@ body {
   line-height: 1.4;
   margin-top: 1.25rem;
 }
+
+.article-prose h5,
+.article-prose h6 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+}
+
+.article-prose h5 { font-size: 1rem; }
+.article-prose h6 { font-size: 0.9375rem; }
 
 .article-prose img {
   display: block;
@@ -731,9 +793,14 @@ body {
 }
 
 .article-prose a {
-  color: var(--navy);
-  text-decoration: underline;
+  color: var(--article-heading);
+  text-decoration: none;
+  font-weight: 600;
 }
+
+.article-prose a :is(strong, code) { color: inherit; }
+.article-prose a u,
+.article-prose u:has(a) { text-decoration: none; }
 
 .article-prose mark {
   background-color: #fef08a;

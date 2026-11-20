@@ -12,7 +12,7 @@ interface Draft {
 const field = "w-full rounded-lg border border-border px-3 py-2.5 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30";
 const button = "rounded-lg border border-border px-4 py-2 text-sm font-semibold text-navy hover:bg-slate-50 disabled:opacity-60";
 
-export default function Generator() {
+export default function Generator({ compact = false }: { compact?: boolean }) {
   const [keyword, setKeyword] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
   const [draft, setDraft] = useState<Draft>();
@@ -70,8 +70,10 @@ export default function Generator() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={generate} className="space-y-4 rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={generate} className={compact
+        ? "flex flex-col gap-3 rounded-xl border border-border bg-white p-3 md:flex-row md:items-end"
+        : "space-y-4 rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-6"}>
+        <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm font-medium text-navy">
             <span>Primary keyword</span>
             <input className={field} required maxLength={120} value={keyword} disabled={busy}
@@ -84,12 +86,13 @@ export default function Generator() {
           </label>
         </div>
         <button type="submit" disabled={busy}
-          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-ink disabled:opacity-60">
+          className="shrink-0 rounded-lg bg-linear-to-r from-gold-light to-gold px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-105 disabled:opacity-60">
+          {compact && <span aria-hidden="true" className="mr-1.5">✦</span>}
           {busy ? "Generating…" : draft ? "Regenerate" : "Generate guest post"}
         </button>
       </form>
 
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       <p role="status" className="sr-only">{busy ? "Generating guest post." : status}</p>
       {draft && (
         <section aria-labelledby="draft-heading" className="space-y-4 rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-6">

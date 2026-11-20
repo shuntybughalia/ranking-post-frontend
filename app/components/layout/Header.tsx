@@ -86,32 +86,49 @@ export default function Header() {
           ))}
         </nav>
 
-        <Form
-          action="/blog"
-          role="search"
-          aria-label="Blog search"
-          onSubmit={() => setMobileOpen(false)}
-          className="order-last mb-3 flex w-full items-center rounded-full border border-border bg-cream/50 focus-within:border-gold-dark min-[75rem]:order-none min-[75rem]:mb-0 min-[75rem]:w-48"
+        <button
+          type="button"
+          popoverTarget="header-blog-search"
+          aria-label="Open blog search"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-gold-dark hover:bg-cream focus-visible:outline-2 focus-visible:outline-gold-dark"
         >
-          <input
-            type="search"
-            name="q"
-            aria-label="Search blog posts"
-            placeholder="Search blogs…"
-            required
-            className="min-w-0 flex-1 rounded-l-full bg-transparent py-2 pl-4 text-base text-ink outline-none placeholder:text-muted"
-          />
-          <button
-            type="submit"
-            aria-label="Search blogs"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gold-dark hover:bg-gold/15 focus-visible:outline-2 focus-visible:outline-gold-dark"
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="6" />
+            <path d="m16 16 4 4" />
+          </svg>
+        </button>
+
+        <div id="header-blog-search" popover="auto" className="fixed inset-auto top-[68px] right-3 m-0 w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-white p-2 shadow-lg">
+          <Form
+            action="/blog"
+            role="search"
+            aria-label="Blog search"
+            onSubmit={() => {
+              document.getElementById("header-blog-search")?.hidePopover();
+              setMobileOpen(false);
+            }}
+            className="flex w-full items-center rounded-full border border-border bg-cream/50 focus-within:border-gold-dark"
           >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="6" />
-              <path d="m16 16 4 4" />
-            </svg>
-          </button>
-        </Form>
+            <input
+              type="search"
+              name="q"
+              aria-label="Search blog posts"
+              placeholder="Search blogs…"
+              required
+              className="min-w-0 flex-1 rounded-l-full bg-transparent py-1.5 pl-3 text-sm text-ink outline-none placeholder:text-muted"
+            />
+            <button
+              type="submit"
+              aria-label="Search blogs"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gold-dark hover:bg-gold/15 focus-visible:outline-2 focus-visible:outline-gold-dark"
+            >
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="m16 16 4 4" />
+              </svg>
+            </button>
+          </Form>
+        </div>
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
           <Link

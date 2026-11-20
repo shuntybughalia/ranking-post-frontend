@@ -19,28 +19,34 @@ export default async function SubmitPostPage() {
   }
 
   return (
-    <>
-      <section aria-labelledby="generator-heading" className="mx-auto w-full max-w-5xl px-4 pt-10 sm:px-6">
-        <h2 id="generator-heading" className="text-2xl font-bold text-navy sm:text-3xl">
-          AI Guest Post Blog Generator
-        </h2>
-        <p className="mb-6 mt-2 text-sm text-muted">
-          Turn a primary keyword into an editable guest post with SEO metadata and FAQs.
-        </p>
-        <Generator />
-      </section>
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-navy">Submit Post</h1>
-          <p className="mt-1 text-sm text-muted">
-            Create a new blog post with SEO metadata and rich content.
-          </p>
+    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+      <section aria-labelledby="generator-heading" className="recent-posts-backdrop rounded-2xl border border-gold/20 px-4 py-4 shadow-lg sm:px-6 sm:py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span aria-hidden="true" className="ai-generator-sparkle flex size-10 shrink-0 items-center justify-center rounded-xl border border-gold/40 bg-gold/15 text-xl text-gold-light">✦</span>
+            <div>
+              <h1 id="generator-heading" className="text-lg font-bold tracking-tight text-white sm:text-2xl">
+                AI Guest Post <span className="text-gold-light">Generator</span>
+              </h1>
+              <p className="text-sm text-slate-200">Turn a keyword into a draft with SEO metadata and FAQs.</p>
+            </div>
+          </div>
+          <a href="#post-form" className="rounded-lg border border-gold/40 px-3 py-2 text-sm font-semibold text-gold-light transition hover:bg-gold/15">
+            Write my own post
+          </a>
         </div>
-        <PostForm
-          mode="create"
-          authorName={session.name}
-        />
-      </div>
-    </>
+        <div className="mt-4">
+          <Generator compact />
+        </div>
+      </section>
+
+      <section id="post-form" aria-labelledby="post-form-heading" className="scroll-mt-24 py-10">
+        <h2 id="post-form-heading" className="text-2xl font-bold text-navy">Submit your post</h2>
+        <aside className="mb-6 mt-3 rounded-xl border border-gold/25 bg-cream px-4 py-3 text-sm leading-relaxed text-ink">
+          <strong>1 free post per calendar month</strong> (India time). Extra posts cost <strong>₹100 each</strong> and go live after the super admin confirms payment.
+        </aside>
+        <PostForm mode="create" authorName={session.name} />
+      </section>
+    </main>
   );
 }

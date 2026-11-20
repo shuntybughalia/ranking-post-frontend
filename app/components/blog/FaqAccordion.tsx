@@ -22,7 +22,7 @@ export default function FaqAccordion({
     <section aria-labelledby="faq-heading" className="mt-12">
       <h2
         id="faq-heading"
-        className="mb-5 text-[22px] font-bold leading-tight text-[#3a3a3a] sm:text-2xl md:text-[28px]"
+        className="mb-5 text-[22px] font-bold leading-tight text-[color:var(--article-heading)] sm:text-2xl md:text-[28px]"
       >
         {title}
       </h2>
@@ -45,7 +45,7 @@ export default function FaqAccordion({
                 </svg>
               </span>
             </summary>
-            <p className="faq-answer whitespace-pre-line px-4 pb-5 text-[15px] leading-relaxed text-muted sm:px-5 sm:text-base">
+            <p className="faq-answer whitespace-pre-line px-4 pb-5 text-[15px] leading-relaxed text-black sm:px-5 sm:text-base">
               {faq.answer}
             </p>
           </details>

@@ -20,7 +20,7 @@ export default function ArticleContent({ content }: ArticleContentProps) {
       {content.map((paragraph, index) => (
         <p
           key={index}
-          className="mb-5 text-base leading-relaxed text-muted last:mb-0"
+          className="mb-5 text-base leading-relaxed text-black last:mb-0"
         >
           {paragraph}
         </p>

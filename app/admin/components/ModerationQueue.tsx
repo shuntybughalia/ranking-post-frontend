@@ -14,10 +14,13 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
   const [articles, setArticles] = useState(initialArticles);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  async function handleApprove(id: string) {
+  async function handleApprove(article: Article) {
+    const { id } = article;
+    const paymentConfirmed = Boolean(article.manualPayment && !article.manualPayment.confirmedAt);
+    if (paymentConfirmed && !window.confirm("Confirm you received ₹100 for this post. This will publish it.")) return;
     setLoadingId(id);
     try {
-      await apiFetch(`/api/posts/${id}/approve`, { method: "POST" });
+      await apiFetch(`/api/posts/${id}/approve`, { method: "POST", json: { paymentConfirmed } });
       setArticles((current) => current.filter((article) => article.id !== id));
       showToast("Post approved and published.", "success");
     } catch {
@@ -63,6 +66,9 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
                 By {article.author} · {article.category}
               </p>
               <p className="mt-3 text-sm text-muted">{article.excerpt}</p>
+              {article.manualPayment && !article.manualPayment.confirmedAt && (
+                <p className="mt-2 text-sm font-semibold text-gold-dark">Awaiting ₹100 payment confirmation</p>
+              )}
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -74,10 +80,10 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
               <button
                 type="button"
                 disabled={loadingId === article.id}
-                onClick={() => void handleApprove(article.id)}
+                onClick={() => void handleApprove(article)}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
-                Approve
+                {article.manualPayment && !article.manualPayment.confirmedAt ? "Confirm ₹100 and publish" : "Approve"}
               </button>
               <button
                 type="button"

@@ -115,7 +115,7 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
     <section
       aria-roledescription="carousel"
       aria-label="Recent posts"
-      className="relative overflow-hidden bg-navy"
+      className="recent-posts-backdrop relative overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -148,24 +148,15 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
               aria-label={isCopy ? undefined : `${slide + 1} of ${count}`}
               aria-hidden={!isActive}
               inert={!isActive}
-              className="relative h-[420px] w-full shrink-0 md:h-[480px]"
+              className="w-full min-w-0 shrink-0"
             >
-              <PostImage
-                src={article.image}
-                alt=""
-                sizes="100vw"
-                preload={!isCopy && slide === 0}
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/55 to-black/10 md:bg-linear-to-r md:from-black/90 md:via-black/60 md:to-black/5" />
-
-              <div className="relative mx-auto flex h-full max-w-6xl items-end px-6 pb-16 md:items-center md:px-16 md:pb-0">
-                <div className="max-w-xl">
-                  <span className="inline-block rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-ink">
+              <div className="mx-auto grid h-full max-w-7xl items-center gap-6 px-6 pb-14 pt-8 md:min-h-[480px] md:grid-cols-2 md:gap-8 md:px-16">
+                <div className="min-w-0">
+                  <span className="inline-block rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold-light">
                     {article.category}
                   </span>
-                  <h2 className="mt-4 text-2xl font-bold leading-tight text-white md:text-4xl">
-                    <Link href={`/blog/${article.slug}`} className="hover:underline">
+                  <h2 className="mt-4 break-words text-2xl font-bold leading-tight text-white md:text-3xl lg:text-4xl">
+                    <Link href={`/blog/${article.slug}`} className="no-underline">
                       {article.title}
                     </Link>
                   </h2>
@@ -174,11 +165,20 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
                   </p>
                   <Link
                     href={`/blog/${article.slug}`}
-                    className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent"
+                    className="mt-6 inline-flex items-center gap-1.5 rounded-xl border border-gold/50 bg-linear-to-r from-gold-light to-gold px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light"
                   >
-                    Read article
+                    Read more
                     <ArrowIcon direction="right" />
                   </Link>
+                </div>
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-gold/10 ring-1 ring-gold/25 shadow-xl shadow-black/35">
+                  <PostImage
+                    src={article.image}
+                    alt=""
+                    sizes="(min-width: 1280px) 560px, (min-width: 768px) 50vw, 100vw"
+                    preload={!isCopy && slide === 0}
+                    className="object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
             type="button"
             onClick={() => move(-1)}
             aria-label="Previous post"
-            className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur transition-colors hover:bg-white/30 md:block"
+            className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-gold/30 bg-white p-2.5 text-gold-dark transition-colors hover:bg-gold/20 md:block"
           >
             <ArrowIcon direction="left" />
           </button>
@@ -200,7 +200,7 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
             type="button"
             onClick={() => move(1)}
             aria-label="Next post"
-            className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 p-2.5 text-white backdrop-blur transition-colors hover:bg-white/30 md:block"
+            className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-gold/30 bg-white p-2.5 text-gold-dark transition-colors hover:bg-gold/20 md:block"
           >
             <ArrowIcon direction="right" />
           </button>
@@ -214,7 +214,7 @@ export default function RecentPostsCarousel({ articles }: { articles: ArticleLis
                 aria-label={`Show post ${i + 1}`}
                 aria-current={i === index}
                 className={`h-2.5 rounded-full transition-all ${
-                  i === index ? "w-7 bg-accent" : "w-2.5 bg-white/50 hover:bg-white/80"
+                  i === index ? "w-7 bg-accent" : "w-2.5 bg-white/45 hover:bg-white/75"
                 }`}
               />
             ))}

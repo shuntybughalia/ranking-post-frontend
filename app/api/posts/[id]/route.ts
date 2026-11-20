@@ -83,6 +83,9 @@ async function handlePATCH(request: Request, context: RouteContext) {
     const status = body.status
       ? validatePostStatus(body.status) ?? existing.status
       : existing.status;
+    if (!isAdmin && status === "rejected" && existing.status !== "rejected") {
+      return NextResponse.json({ error: "Invalid submission status." }, { status: 400 });
+    }
 
     const article = await updateArticle(id, {
       title: body.title,
@@ -98,7 +101,7 @@ async function handlePATCH(request: Request, context: RouteContext) {
       status,
       publishedAt: body.publishedAt,
       featured: isAdmin ? body.featured : undefined,
-    });
+    }, !isAdmin);
 
     if (!article) {
       return NextResponse.json({ error: "Post not found." }, { status: 404 });

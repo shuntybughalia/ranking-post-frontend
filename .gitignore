@@ -37,6 +37,7 @@ yarn-error.log*
 
 # local user accounts (created at runtime)
 /data/users.json
+/data/monthly-post-slots.json
 
 # local featured-image uploads
 /public/uploads
