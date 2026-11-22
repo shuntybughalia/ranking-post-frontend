@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 
 const topics = [
   {
@@ -19,7 +20,7 @@ const topics = [
   },
   {
     question: "How much does posting cost?",
-    answer: "Your first post each calendar month is free (India time). Extra posts cost ₹100 each and stay pending until the super admin confirms payment. Contact the RankingPost team to arrange payment.",
+    answer: `Your first post each calendar month is free (US Eastern Time). Extra posts cost ${EXTRA_POST_PRICE} each and stay pending until the super admin confirms payment. Contact the RankingPost team to arrange payment.`,
   },
   {
     question: "Where is my draft or pending post?",

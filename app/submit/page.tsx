@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Generator from "@/app/guest-post-generator/Generator";
 import PostForm from "@/app/components/posts/PostForm";
 import { getSession } from "@/lib/auth";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 
 export const metadata: Metadata = {
   title: "Submit a Guest Post",
@@ -43,7 +44,7 @@ export default async function SubmitPostPage() {
       <section id="post-form" aria-labelledby="post-form-heading" className="scroll-mt-24 py-10">
         <h2 id="post-form-heading" className="text-2xl font-bold text-navy">Submit your post</h2>
         <aside className="mb-6 mt-3 rounded-xl border border-gold/25 bg-cream px-4 py-3 text-sm leading-relaxed text-ink">
-          <strong>1 free post per calendar month</strong> (India time). Extra posts cost <strong>₹100 each</strong> and go live after the super admin confirms payment.
+          <strong>1 free post per calendar month</strong> (US Eastern Time). Extra posts cost <strong>{EXTRA_POST_PRICE} each</strong> and go live after the super admin confirms payment.
         </aside>
         <PostForm mode="create" authorName={session.name} />
       </section>

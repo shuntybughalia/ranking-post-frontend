@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Article } from "@/lib/types";
 import { apiFetch } from "@/lib/api-client";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 import { showToast } from "@/lib/toast";
 
 interface ModerationQueueProps {
@@ -17,7 +18,7 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
   async function handleApprove(article: Article) {
     const { id } = article;
     const paymentConfirmed = Boolean(article.manualPayment && !article.manualPayment.confirmedAt);
-    if (paymentConfirmed && !window.confirm("Confirm you received ₹100 for this post. This will publish it.")) return;
+    if (paymentConfirmed && !window.confirm(`Confirm you received ${EXTRA_POST_PRICE} for this post. This will publish it.`)) return;
     setLoadingId(id);
     try {
       await apiFetch(`/api/posts/${id}/approve`, { method: "POST", json: { paymentConfirmed } });
@@ -67,7 +68,7 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
               </p>
               <p className="mt-3 text-sm text-muted">{article.excerpt}</p>
               {article.manualPayment && !article.manualPayment.confirmedAt && (
-                <p className="mt-2 text-sm font-semibold text-gold-dark">Awaiting ₹100 payment confirmation</p>
+                <p className="mt-2 text-sm font-semibold text-gold-dark">Awaiting {EXTRA_POST_PRICE} payment confirmation</p>
               )}
             </div>
             <div className="flex flex-wrap gap-3">
@@ -83,7 +84,7 @@ export default function ModerationQueue({ articles: initialArticles }: Moderatio
                 onClick={() => void handleApprove(article)}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
-                {article.manualPayment && !article.manualPayment.confirmedAt ? "Confirm ₹100 and publish" : "Approve"}
+                {article.manualPayment && !article.manualPayment.confirmedAt ? `Confirm ${EXTRA_POST_PRICE} and publish` : "Approve"}
               </button>
               <button
                 type="button"

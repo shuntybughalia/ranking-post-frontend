@@ -6,6 +6,7 @@ import type { Article, PostStats } from "@/lib/types";
 import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import PostStatsCards from "@/app/components/posts/PostStatsCards";
 import { apiFetch } from "@/lib/api-client";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 import { showToast } from "@/lib/toast";
 
 interface MyPostsDashboardProps {
@@ -124,7 +125,7 @@ export default function MyPostsDashboard({
                         <p className="font-medium text-navy">{article.title}</p>
                         {article.status === "pending" && article.manualPayment && !article.manualPayment.confirmedAt && (
                           <Link href="/contact-us" className="text-sm font-medium text-gold-dark underline">
-                            Contact us to arrange the ₹100 payment
+                            Contact us to arrange the {EXTRA_POST_PRICE} payment
                           </Link>
                         )}
                         {article.rejectionReason && (

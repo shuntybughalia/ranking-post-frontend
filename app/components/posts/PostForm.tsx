@@ -9,6 +9,7 @@ import type { Article, BlogCategory, FaqItem, PostStatus } from "@/lib/types";
 import RichTextEditor from "@/app/admin/components/RichTextEditor";
 import { apiFetch, getErrorMessage } from "@/lib/api-client";
 import { INTERNAL_LINK_REQUIRED, hasInternalLink } from "@/lib/internal-links";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 import { showToast } from "@/lib/toast";
 import FaqEditor from "./FaqEditor";
 import ImageUploadButton from "./ImageUploadButton";
@@ -254,7 +255,7 @@ export default function PostForm({
         saved.status === "draft"
           ? "Draft saved successfully."
           : saved.manualPayment && !saved.manualPayment.confirmedAt
-            ? "Post saved for review. Contact the site team to arrange the ₹100 payment."
+            ? `Post saved for review. Contact the site team to arrange the ${EXTRA_POST_PRICE} payment.`
             : saved.status === "pending" ? "Post submitted for review." : "Post published successfully.",
         "success",
       );

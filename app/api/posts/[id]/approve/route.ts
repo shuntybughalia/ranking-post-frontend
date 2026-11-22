@@ -3,6 +3,7 @@ import { approveArticle, getArticleById } from "@/lib/articles";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { revalidatePostPaths } from "@/lib/revalidate-posts";
 import { withApiErrors } from "@/lib/api-handler";
+import { EXTRA_POST_PRICE } from "@/lib/post-pricing";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ async function handlePOST(request: Request, context: RouteContext) {
     : undefined;
   if (existing.manualPayment && !existing.manualPayment.confirmedAt && !confirmer) {
     return NextResponse.json(
-      { error: "A super admin must confirm receipt of ₹100 from Moderation." },
+      { error: `A super admin must confirm receipt of ${EXTRA_POST_PRICE} from Moderation.` },
       { status: 402 },
     );
   }

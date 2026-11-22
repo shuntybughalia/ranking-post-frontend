@@ -18,6 +18,7 @@ import {
 } from "./image-storage";
 import { isValidSlug, slugify } from "./post-validation";
 import { INTERNAL_LINK_REQUIRED, hasInternalLink } from "./internal-links";
+import { EXTRA_POST_PRICE } from "./post-pricing";
 import { sanitizeHtml } from "./sanitize";
 import { syncTags } from "./tags";
 import type {
@@ -564,19 +565,19 @@ function assertNotDuplicate(
   }
 }
 
-const indiaMonth = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Kolkata",
+const easternMonth = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
   year: "numeric",
   month: "2-digit",
 });
 
 async function applyMonthlyLimit(article: Article, articles: Article[]) {
-  const month = indiaMonth.format(new Date());
+  const month = easternMonth.format(new Date());
   const previous = articles.find((post) => {
     if (post.id === article.id || post.authorId !== article.authorId || post.manualPayment) return false;
     if (post.submissionMonth) return post.submissionMonth === month;
     const date = new Date(post.publishedAt ?? post.createdAt);
-    return post.status !== "draft" && Number.isFinite(date.getTime()) && indiaMonth.format(date) === month;
+    return post.status !== "draft" && Number.isFinite(date.getTime()) && easternMonth.format(date) === month;
   });
   article.submissionMonth = month;
   const free = await claimMonthlyPostSlot(
@@ -674,7 +675,7 @@ async function updateArticleUnlocked(
     } else if (enforceMonthlyLimit) {
       input = { ...input, status: "pending", publishedAt: null };
     } else {
-      throw new Error("A super admin must confirm the ₹100 payment from Moderation.");
+      throw new Error(`A super admin must confirm the ${EXTRA_POST_PRICE} payment from Moderation.`);
     }
   }
 
