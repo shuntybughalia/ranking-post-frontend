@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 
 const topics = [
@@ -32,9 +33,10 @@ export default function SiteHelp() {
 
   return (
     <div className="fixed inset-x-4 bottom-4 z-40 flex flex-col items-end gap-2 sm:left-auto sm:right-6">
-      {open && (
         <section id="post-help-panel" aria-labelledby="post-help-heading"
-          className="recent-posts-backdrop max-h-[60dvh] w-full overflow-y-auto rounded-2xl border border-gold/30 p-4 text-sm text-white shadow-xl sm:w-88">
+          data-open={open}
+          inert={!open}
+          className="site-help-panel recent-posts-backdrop max-h-[60dvh] w-full overflow-y-auto rounded-2xl border border-gold/30 p-4 text-sm text-white shadow-xl sm:w-88">
           <h2 id="post-help-heading" className="text-base font-bold text-gold-light">RankingPost help</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {topics.map(({ question }, index) => (
@@ -54,11 +56,13 @@ export default function SiteHelp() {
             <Link href="/contact-us" className="underline underline-offset-4">Contact us</Link>
           </div>
         </section>
-      )}
-      <button type="button" aria-expanded={open} aria-controls={open ? "post-help-panel" : undefined}
-        onClick={() => setOpen(!open)}
-        className="rounded-full border border-gold/40 bg-linear-to-r from-gold-light to-gold px-4 py-2.5 text-sm font-semibold text-ink shadow-md">
-        {open ? "Close help" : "✦ Need help?"}
+      <button type="button" aria-expanded={open} aria-controls="post-help-panel"
+        onClick={() => setOpen((current) => !current)}
+        className="group inline-flex flex-col items-center rounded-lg p-1 text-xs font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-dark">
+        <Image src="/help-robot.png" alt="" width={64} height={64} className="size-16 object-contain" />
+        <span className="rounded-md bg-white px-2 py-0.5 group-hover:text-gold-dark">
+          {open ? "Close help" : "Need help?"}
+        </span>
       </button>
     </div>
   );
