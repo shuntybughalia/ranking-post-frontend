@@ -1,0 +1,27 @@
+User-Agent: *
+
+# Allow public website pages
+Allow: /
+Allow: /blog/
+Allow: /services
+
+# Block About Us and Contact Us pages
+Disallow: /about-us
+Disallow: /contact-us
+
+# Block private and administrative areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /my-posts
+Disallow: /api/
+Disallow: /private/
+Disallow: /tmp/
+
+# Block authentication pages
+Disallow: /login
+Disallow: /sign-in
+Disallow: /signup
+Disallow: /register
+
+# Sitemap
+Sitemap: https://www.rankingpost.com/sitemap.xml
