@@ -24,7 +24,7 @@ async function getPublishedArticlesForSitemap() {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   const articles = await getPublishedArticlesForSitemap();
-  // Newest post edit doubles as the "last changed" date for pages that list posts.
+  // The home page lists recent posts, so use the latest post update as its last modified date.
   const latestPostUpdate = articles.reduce<string | undefined>(
     (latest, article) =>
       !latest || new Date(article.updatedAt) > new Date(latest) ? article.updatedAt : latest,
@@ -38,12 +38,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${base}/`,
       lastModified: latestPostUpdate,
       priority: 1.0,
-      changeFrequency: "daily",
-    },
-    {
-      url: `${base}/blog`,
-      lastModified: latestPostUpdate,
-      priority: 0.9,
       changeFrequency: "daily",
     },
     {
