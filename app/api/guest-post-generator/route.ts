@@ -4,6 +4,9 @@ export const maxDuration = 60;
 
 const cooldowns = new Map<string, number>();
 const cooldownMs = 15_000;
+const defaultModel = "gemini-3.8-flash";
+// Leave time to return a response before the production function's 30-second cutoff.
+const generationTimeoutMs = 24_000;
 
 type GeminiResponse = {
   candidates?: Array<{
@@ -53,14 +56,15 @@ export async function POST(request: Request) {
   if (cooldowns.has(session.id)) return error("Wait a moment before generating again.", 429);
   cooldowns.set(session.id, now + cooldownMs);
 
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
+  const model = process.env.GEMINI_MODEL?.trim() || defaultModel;
+  const generationSignal = AbortSignal.timeout(generationTimeoutMs);
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        signal: AbortSignal.timeout(50_000),
+        signal: generationSignal,
         body: JSON.stringify({
           systemInstruction: {
             parts: [{
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
           contents: [{ role: "user", parts: [{ text: JSON.stringify({ keyword, targetUrl }) }] }],
           generationConfig: {
             maxOutputTokens: 4096,
+            ...(model === defaultModel ? { thinkingConfig: { thinkingLevel: "LOW" } } : {}),
             responseMimeType: "application/json",
             responseJsonSchema: {
               type: "object",
@@ -118,7 +123,16 @@ export async function POST(request: Request) {
     }
     const article = draft.article.replaceAll("](TARGET_URL)", () => `](<${targetUrl}>)`);
     return Response.json({ seoTitle: draft.seoTitle, metaDescription: draft.metaDescription, article });
-  } catch {
+  } catch (cause) {
+    if (generationSignal.aborted) {
+      console.warn("Guest post generation timed out", { model, timeoutMs: generationTimeoutMs });
+      return error("Gemini took too long to generate the draft. Please try again.", 504);
+    }
+
+    console.warn("Guest post generation failed", {
+      model,
+      errorType: cause instanceof Error ? cause.name : "UnknownError",
+    });
     return error("The draft could not be generated. Try again in a moment.", 502);
   }
 }
